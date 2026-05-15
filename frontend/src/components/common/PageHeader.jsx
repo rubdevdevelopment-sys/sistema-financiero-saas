@@ -12,3 +12,5 @@ export function PageHeader({ eyebrow, title, description, action }) {
     </div>
   );
 }
+
+export default PageHeader;

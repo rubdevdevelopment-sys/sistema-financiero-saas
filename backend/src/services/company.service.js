@@ -21,8 +21,8 @@ export async function listCompanies() {
 export async function createCompany(data) {
   const { rows } = await query(
     `
-      insert into companies (name, slug, nit, email, phone, currency, timezone, active)
-      values ($1, $2, $3, $4, $5, $6, $7, $8)
+      insert into companies (name, slug, nit, email, phone, currency, timezone, valor_objetivo_emaus, active)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       returning *
     `,
     [
@@ -33,13 +33,14 @@ export async function createCompany(data) {
       data.phone ?? null,
       data.currency,
       data.timezone,
+      data.valor_objetivo_emaus,
       data.active
     ]
   );
 
   const company = rows[0];
 
-  const modules = ["dashboard", "incomes", "expenses", "admin"];
+  const modules = ["dashboard", "participants", "incomes", "expenses", "admin"];
   for (const moduleKey of modules) {
     await query(
       `
@@ -63,7 +64,8 @@ export async function updateCompany(id, data) {
           phone = $5,
           currency = $6,
           timezone = $7,
-          active = $8,
+          valor_objetivo_emaus = $8,
+          active = $9,
           updated_at = now()
       where id = $1
       returning *
@@ -76,6 +78,7 @@ export async function updateCompany(id, data) {
       data.phone ?? null,
       data.currency,
       data.timezone,
+      data.valor_objetivo_emaus,
       data.active
     ]
   );
@@ -83,6 +86,50 @@ export async function updateCompany(id, data) {
   if (!rows[0]) {
     throw new ApiError(404, "Empresa no encontrada");
   }
+
+  return rows[0];
+}
+
+export async function getCurrentCompany(requestUser) {
+  const { rows } = await query(
+    `
+      select *
+      from companies
+      where id = $1
+      limit 1
+    `,
+    [requestUser.companyId]
+  );
+
+  if (!rows[0]) {
+    throw new ApiError(404, "Empresa no encontrada");
+  }
+
+  return rows[0];
+}
+
+export async function updateCurrentCompany(requestUser, data) {
+  const current = await getCurrentCompany(requestUser);
+
+  const { rows } = await query(
+    `
+      update companies
+      set name = $2,
+          phone = $3,
+          email = $4,
+          valor_objetivo_emaus = $5,
+          updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [
+      current.id,
+      data.name ?? current.name,
+      data.phone ?? current.phone,
+      data.email ?? current.email,
+      data.valor_objetivo_emaus
+    ]
+  );
 
   return rows[0];
 }

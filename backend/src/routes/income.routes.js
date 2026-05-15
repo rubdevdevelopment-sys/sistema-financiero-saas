@@ -10,12 +10,14 @@ import { authorize } from "../middlewares/authorize.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import {
   createFinanceSchema,
+  financeParamsSchema,
+  listFinanceSchema,
   updateFinanceSchema
 } from "../validators/finance.validators.js";
 
 export const incomeRouter = Router();
 
-incomeRouter.get("/", asyncHandler(getIncomes));
+incomeRouter.get("/", validate(listFinanceSchema), asyncHandler(getIncomes));
 incomeRouter.post(
   "/",
   authorize("super_admin", "admin", "operator"),
@@ -31,5 +33,6 @@ incomeRouter.put(
 incomeRouter.delete(
   "/:id",
   authorize("super_admin", "admin"),
+  validate(financeParamsSchema),
   asyncHandler(deleteIncome)
 );

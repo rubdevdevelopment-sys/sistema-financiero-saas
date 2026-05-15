@@ -11,6 +11,7 @@ const emptyCompany = {
   phone: "",
   currency: "COP",
   timezone: "America/Bogota",
+  valor_objetivo_emaus: 460000,
   active: true
 };
 
@@ -62,11 +63,13 @@ export function CompaniesPage() {
               ["slug", "Slug unico"],
               ["nit", "NIT"],
               ["email", "Correo"],
-              ["phone", "Telefono"]
+              ["phone", "Telefono"],
+              ["valor_objetivo_emaus", "Meta Emaus por participante"]
             ].map(([key, label]) => (
               <input
                 key={key}
                 className="input-light"
+                type={key === "valor_objetivo_emaus" ? "number" : "text"}
                 placeholder={label}
                 value={form[key]}
                 onChange={(event) => setForm({ ...form, [key]: event.target.value })}
@@ -96,6 +99,7 @@ export function CompaniesPage() {
                 <div className="mt-4 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
                   <p>Usuarios: {row.users_count}</p>
                   <p>Modulos activos: {row.active_modules}</p>
+                  <p>Meta Emaus: {row.valor_objetivo_emaus}</p>
                 </div>
               </div>
             ))}
@@ -105,3 +109,5 @@ export function CompaniesPage() {
     </div>
   );
 }
+
+export default CompaniesPage;

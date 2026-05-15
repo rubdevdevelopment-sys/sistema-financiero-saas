@@ -57,6 +57,8 @@ Cuando el proyecto este creado:
 1. Duplica `frontend/.env.example` como `frontend/.env`
 2. Completa los valores reales
 
+No se agregaron variables de entorno nuevas para el modulo financiero.
+
 ## 6. Ejecutar SQL inicial
 
 En Supabase:
@@ -67,6 +69,9 @@ En Supabase:
 4. Copia todo el contenido y pegalo en el editor
 5. Presiona `Run`
 6. Repite con `backend/supabase/seeds/001_seed_demo.sql`
+7. Ejecuta luego `backend/supabase/migrations/002_finance_module_upgrade.sql`
+8. Ejecuta luego `backend/supabase/migrations/003_emaus_participants.sql`
+9. Ejecuta luego `backend/supabase/migrations/004_income_types.sql`
 
 ## 7. Instalar dependencias
 

@@ -9,26 +9,84 @@ import {
 const TABLE = "incomes";
 
 export async function getIncomes(req, res) {
-  const items = await listMovements(TABLE, req.user, req.query);
-  return sendSuccess(res, items, "Ingresos obtenidos");
+
+  const query =
+    req.validated?.query ||
+    req.query ||
+    {};
+
+  const items = await listMovements(
+    TABLE,
+    req.user,
+    query
+  );
+
+  return sendSuccess(
+    res,
+    items,
+    "Ingresos obtenidos"
+  );
 }
 
 export async function createIncome(req, res) {
-  const item = await createMovement(TABLE, req.validated.body, req.user);
-  return sendSuccess(res, item, "Ingreso creado", 201);
+
+  const body =
+    req.validated?.body ||
+    req.body;
+
+  const item = await createMovement(
+    TABLE,
+    body,
+    req.user
+  );
+
+  return sendSuccess(
+    res,
+    item,
+    "Ingreso creado",
+    201
+  );
 }
 
 export async function updateIncome(req, res) {
+
+  const body =
+    req.validated?.body ||
+    req.body;
+
+  const id =
+    req.validated?.params?.id ||
+    req.params.id;
+
   const item = await updateMovement(
     TABLE,
-    req.validated.params.id,
-    req.validated.body,
+    id,
+    body,
     req.user
   );
-  return sendSuccess(res, item, "Ingreso actualizado");
+
+  return sendSuccess(
+    res,
+    item,
+    "Ingreso actualizado"
+  );
 }
 
 export async function deleteIncome(req, res) {
-  const item = await deleteMovement(TABLE, req.params.id, req.user);
-  return sendSuccess(res, item, "Ingreso eliminado");
+
+  const id =
+    req.validated?.params?.id ||
+    req.params.id;
+
+  const item = await deleteMovement(
+    TABLE,
+    id,
+    req.user
+  );
+
+  return sendSuccess(
+    res,
+    item,
+    "Ingreso eliminado"
+  );
 }

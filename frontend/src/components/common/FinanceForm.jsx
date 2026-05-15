@@ -1,158 +1,410 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { financeSchema } from "../../schemas/finance.js";
 
 const initialState = {
   category_id: "",
+  income_type: "participant_payment",
+  participant_id: "",
   title: "",
   description: "",
   amount: "",
   movement_date: new Date().toISOString().slice(0, 10),
   payment_method: "Transferencia",
   status: "completed",
+  installment_number: "",
+  receipt_number: "",
   attachment_url: "",
   notes: "",
-  responsible: ""
+  responsible: "",
+  authorized_by: "",
+  receipt_reference: ""
 };
 
-export function FinanceForm({ title, categories, initialData, onSubmit, onCancel }) {
-  const [form, setForm] = useState(initialState);
-
-  useEffect(() => {
-    if (initialData) {
-      setForm({
-        category_id: initialData.category_id ?? "",
-        title: initialData.title ?? "",
-        description: initialData.description ?? "",
-        amount: initialData.amount ?? "",
-        movement_date: initialData.movement_date?.slice(0, 10) ?? "",
-        payment_method: initialData.payment_method ?? "Transferencia",
-        status: initialData.status ?? "completed",
-        attachment_url: initialData.attachment_url ?? "",
-        notes: initialData.notes ?? "",
-        responsible: initialData.responsible ?? ""
-      });
-    } else {
-      setForm(initialState);
-    }
-  }, [initialData]);
-
-  function updateField(event) {
-    setForm((current) => ({
-      ...current,
-      [event.target.name]: event.target.value
-    }));
+export function FinanceForm({
+  title,
+  categories,
+  participants = [],
+  mode = "income",
+  initialData,
+  onSubmit
+}) {
+const form = useForm({
+  defaultValues: {
+    income_type: "participant_payment",
+    category_id: "",
+    participant_id: "",
+    title: "",
+    amount: 0,
+    movement_date: "",
+    payment_method: "",
+    status: "completed",
+    installment_number: "",
+    receipt_number: "",
+    description: "",
+    responsible: "",
+    attachment_url: "",
+    notes: ""
   }
+});
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    await onSubmit(form);
-    setForm(initialState);
+useEffect(() => {
+  if (initialData) {
+    form.reset({
+      income_type:
+        initialData.income_type ||
+        "participant_payment",
+
+      category_id:
+        initialData.category_id || "",
+
+      participant_id:
+        initialData.participant_id || "",
+
+      title:
+        initialData.title || "",
+
+      amount:
+        Number(initialData.amount) || 0,
+
+      movement_date:
+        initialData.movement_date
+          ?.split("T")[0] || "",
+
+      payment_method:
+        initialData.payment_method || "",
+
+      status:
+        initialData.status || "completed",
+
+      installment_number:
+        initialData.installment_number || "",
+
+      receipt_number:
+        initialData.receipt_number || "",
+
+      description:
+        initialData.description || "",
+
+      responsible:
+        initialData.responsible || "",
+
+      attachment_url:
+        initialData.attachment_url || "",
+
+      notes:
+        initialData.notes || ""
+    });
   }
+}, [initialData, form]);
+
+  const errors = form.formState.errors;
+
+  const selectedIncomeType =
+    form.watch("income_type");
+
+  const showParticipant =
+    mode === "income" &&
+    (selectedIncomeType ??
+      "participant_payment") ===
+      "participant_payment";
+
+async function submit(values) {
+
+  console.log("VALUES:");
+  console.log(values);
+
+  await onSubmit(values);
+
+  form.reset(initialState);
+}
 
   return (
-    <form className="panel-soft p-6" onSubmit={handleSubmit}>
-      <div className="mb-5 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-950">{title}</h3>
-        {onCancel && (
-          <button type="button" className="btn-secondary" onClick={onCancel}>
-            Cancelar
-          </button>
-        )}
-      </div>
+    <form
+      className="grid gap-4 md:grid-cols-2"
+      onSubmit={form.handleSubmit(submit)}
+    >
+      {mode === "income" ? (
+        <div>
+          <select
+            className="input-light"
+            {...form.register("income_type")}
+          >
+            <option value="participant_payment">
+              Aporte participante
+            </option>
 
-      <div className="grid gap-4 md:grid-cols-2">
+            <option value="donation">
+              Donacion
+            </option>
+
+            <option value="sponsorship">
+              Patrocinio
+            </option>
+
+            <option value="event_income">
+              Ingreso de evento
+            </option>
+
+            <option value="other">
+              Otro ingreso
+            </option>
+          </select>
+        </div>
+      ) : (
+        <div>
+          <input
+            className="input-light"
+            placeholder="Autorizado por"
+            {...form.register("authorized_by")}
+          />
+        </div>
+      )}
+
+      {showParticipant ? (
+        <div>
+          <select
+            className="input-light"
+            {...form.register("participant_id")}
+          >
+            <option value="">
+              Selecciona participante
+            </option>
+
+            {participants.map((participant) => (
+             <option
+              key={participant.id}
+              value={participant.id}
+            >
+            {
+  participant.full_name ||
+  participant.name ||
+  `${participant.first_name || ""} ${participant.last_name || ""}`
+}
+            </option>
+            ))}
+          </select>
+
+          {errors.participant_id ? (
+            <p className="mt-2 text-sm text-rose-600">
+              {errors.participant_id.message}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div>
+          {mode === "income" ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              Este ingreso no afectara saldos de participantes.
+            </div>
+          ) : (
+            <input
+              className="input-light"
+              placeholder="Referencia del recibo"
+              {...form.register("receipt_reference")}
+            />
+          )}
+        </div>
+      )}
+
+      <div>
         <select
-          name="category_id"
           className="input-light"
-          value={form.category_id}
-          onChange={updateField}
-          required
+          {...form.register("category_id")}
         >
-          <option value="">Selecciona categoria</option>
+          <option value="">
+            Selecciona categoria
+          </option>
+
           {categories.map((category) => (
-            <option key={category.id} value={category.id}>
+            <option
+              key={category.id}
+              value={category.id}
+            >
               {category.name}
             </option>
           ))}
         </select>
+
+        {errors.category_id ? (
+          <p className="mt-2 text-sm text-rose-600">
+            {errors.category_id.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
         <input
           className="input-light"
-          name="title"
           placeholder="Titulo"
-          value={form.title}
-          onChange={updateField}
-          required
+          {...form.register("title")}
         />
+
+        {errors.title ? (
+          <p className="mt-2 text-sm text-rose-600">
+            {errors.title.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
+       <input
+  type="number"
+  step="0.01"
+  className="input-light"
+  placeholder="Monto"
+  {...form.register("amount", {
+    valueAsNumber: true
+  })}
+/>
+
+        {errors.amount ? (
+          <p className="mt-2 text-sm text-rose-600">
+            {errors.amount.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
         <input
-          className="input-light"
-          name="amount"
-          type="number"
-          min="1"
-          placeholder="Monto"
-          value={form.amount}
-          onChange={updateField}
-          required
-        />
-        <input
-          className="input-light"
-          name="movement_date"
           type="date"
-          value={form.movement_date}
-          onChange={updateField}
-          required
+          className="input-light"
+          {...form.register("movement_date")}
         />
+
+        {errors.movement_date ? (
+          <p className="mt-2 text-sm text-rose-600">
+            {errors.movement_date.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
         <input
           className="input-light"
-          name="payment_method"
           placeholder="Metodo de pago"
-          value={form.payment_method}
-          onChange={updateField}
-          required
+          {...form.register("payment_method")}
         />
+
+        {errors.payment_method ? (
+          <p className="mt-2 text-sm text-rose-600">
+            {errors.payment_method.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
         <select
-          name="status"
           className="input-light"
-          value={form.status}
-          onChange={updateField}
-          required
+          {...form.register("status")}
         >
-          <option value="completed">Completado</option>
-          <option value="pending">Pendiente</option>
-          <option value="cancelled">Cancelado</option>
+          <option value="completed">
+            Completado
+          </option>
+
+          <option value="pending">
+            Pendiente
+          </option>
+
+          <option value="cancelled">
+            Cancelado
+          </option>
         </select>
+      </div>
+
+      {showParticipant ? (
+        <>
+          <div>
+            <input
+              className="input-light"
+              type="number"
+              min="1"
+              placeholder="Numero de cuota"
+              {...form.register(
+                "installment_number"
+              )}
+            />
+          </div>
+
+          <div>
+            <input
+              className="input-light"
+              placeholder="Numero de comprobante"
+              {...form.register(
+                "receipt_number"
+              )}
+            />
+          </div>
+        </>
+      ) : mode === "expense" ? (
+        <div>
+          <input
+            className="input-light"
+            placeholder="Referencia del recibo"
+            {...form.register(
+              "receipt_reference"
+            )}
+          />
+        </div>
+      ) : (
+        <div>
+          <input
+            className="input-light"
+            placeholder="Numero de comprobante"
+            {...form.register(
+              "receipt_number"
+            )}
+          />
+        </div>
+      )}
+
+      <div className="md:col-span-2">
         <input
-          className="input-light md:col-span-2"
-          name="description"
+          className="input-light"
           placeholder="Descripcion"
-          value={form.description}
-          onChange={updateField}
-        />
-        <input
-          className="input-light"
-          name="responsible"
-          placeholder="Responsable"
-          value={form.responsible}
-          onChange={updateField}
-        />
-        <input
-          className="input-light"
-          name="attachment_url"
-          placeholder="URL de adjunto"
-          value={form.attachment_url}
-          onChange={updateField}
-        />
-        <textarea
-          className="input-light md:col-span-2"
-          name="notes"
-          rows="3"
-          placeholder="Observaciones"
-          value={form.notes}
-          onChange={updateField}
+          {...form.register("description")}
         />
       </div>
 
-      <button className="btn-primary mt-5" type="submit">
-        Guardar
-      </button>
-    </form>
-  );
+      <div>
+        <input
+          className="input-light"
+          placeholder="Responsable"
+          {...form.register("responsible")}
+        />
+      </div>
+
+      <div>
+        <input
+          className="input-light"
+          placeholder="URL de adjunto"
+          {...form.register("attachment_url")}
+        />
+
+        {errors.attachment_url ? (
+          <p className="mt-2 text-sm text-rose-600">
+            {errors.attachment_url.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="md:col-span-2">
+        <textarea
+          className="input-light"
+          rows="4"
+          placeholder="Observaciones"
+          {...form.register("notes")}
+        />
+      </div>
+
+<div className="md:col-span-2 flex justify-end">
+  <button type="submit" className="btn-primary">
+    {title}
+  </button>
+</div>
+</form>
+);
 }
+
+export default FinanceForm;
