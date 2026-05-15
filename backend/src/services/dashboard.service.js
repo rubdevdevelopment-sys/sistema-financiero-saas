@@ -294,20 +294,26 @@ export async function getDashboardMetrics(requestUser) {
   const monthExpense = Number(monthlyKpis.rows[0]?.month_expense ?? 0);
   const totalExpense = Number(monthlyKpis.rows[0]?.total_expense ?? 0);
   const totalMeta = Number(participantSummary.rows[0]?.total_meta ?? 0);
-  const totalRecaudado = Number(participantSummary.rows[0]?.total_recaudado ?? 0);
+  const aportesParticipantes = incomeTypeBreakdown.rows
+    .filter((item) => item.income_type === "participant_payment")
+    .reduce((acc, item) => acc + Number(item.total_amount), 0);
   const otrosIngresos = incomeTypeBreakdown.rows
     .filter((item) => item.income_type !== "participant_payment")
     .reduce((acc, item) => acc + Number(item.total_amount), 0);
-  const porcentajeCumplimiento = totalMeta > 0 ? (totalRecaudado / totalMeta) * 100 : 0;
+  const totalIngresosGenerales = aportesParticipantes + otrosIngresos;
+  const porcentajeCumplimiento =
+    totalMeta > 0
+      ? (aportesParticipantes / totalMeta) * 100
+      : 0;
 
   return {
     cards: {
-      aportesParticipantes: totalRecaudado,
+      aportesParticipantes,
       otrosIngresos,
-      totalIngresosGenerales: totalRecaudado + otrosIngresos,
-      totalRecaudado,
+      totalIngresosGenerales,
+      totalRecaudado: totalIngresosGenerales,
       totalGastos: totalExpense,
-      saldoActualCaja: totalRecaudado + otrosIngresos - totalExpense,
+      saldoActualCaja: totalIngresosGenerales - totalExpense,
       porcentajeCumplimiento,
       totalParticipantes: Number(participantSummary.rows[0]?.total_participants ?? 0),
       participantesCompletos: Number(participantSummary.rows[0]?.participants_completed ?? 0),

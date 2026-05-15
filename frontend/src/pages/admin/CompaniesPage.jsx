@@ -19,6 +19,7 @@ export function CompaniesPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyCompany);
+  const [editing, setEditing] = useState(null);
 
   useEffect(() => {
     if (user?.role === "super_admin") {
@@ -33,9 +34,50 @@ export function CompaniesPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    await api.post("/companies", form);
+
+    const payload = {
+      name: form.name,
+      nit: form.nit || null,
+      email: form.email || null,
+      phone: form.phone || null,
+      currency: form.currency || "COP",
+      timezone: form.timezone || "America/Bogota",
+      valor_objetivo_emaus: Number(form.valor_objetivo_emaus) || 0,
+      active: Boolean(form.active)
+    };
+
+    if (editing) {
+      await api.put(`/companies/${editing.id}`, payload);
+    } else {
+      await api.post("/companies", {
+        ...payload,
+        slug: form.slug
+      });
+    }
+
     setForm(emptyCompany);
+    setEditing(null);
     await loadCompanies();
+  }
+
+  function startEdit(company) {
+    setEditing(company);
+    setForm({
+      name: company.name || "",
+      slug: company.slug || "",
+      nit: company.nit || "",
+      email: company.email || "",
+      phone: company.phone || "",
+      currency: company.currency || "COP",
+      timezone: company.timezone || "America/Bogota",
+      valor_objetivo_emaus: company.valor_objetivo_emaus ?? 460000,
+      active: Boolean(company.active)
+    });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setForm(emptyCompany);
   }
 
   if (user?.role !== "super_admin") {
@@ -56,7 +98,9 @@ export function CompaniesPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <form className="panel-soft p-6" onSubmit={handleSubmit}>
-          <h3 className="text-lg font-semibold text-slate-950">Nueva empresa</h3>
+          <h3 className="text-lg font-semibold text-slate-950">
+            {editing ? "Editar empresa" : "Nueva empresa"}
+          </h3>
           <div className="mt-5 grid gap-4">
             {[
               ["name", "Nombre de empresa"],
@@ -73,12 +117,38 @@ export function CompaniesPage() {
                 placeholder={label}
                 value={form[key]}
                 onChange={(event) => setForm({ ...form, [key]: event.target.value })}
-                required={key === "name" || key === "slug"}
+                required={key === "name" || (!editing && key === "slug")}
+                disabled={editing && key === "slug"}
               />
             ))}
-            <button className="btn-primary" type="submit">
-              Crear empresa
-            </button>
+            <label className="flex items-center gap-3 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={form.active}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    active: event.target.checked
+                  })
+                }
+              />
+              Empresa activa
+            </label>
+            <div className="flex gap-3">
+              <button className="btn-primary" type="submit">
+                {editing ? "Guardar cambios" : "Crear empresa"}
+              </button>
+
+              {editing ? (
+                <button
+                  className="btn-secondary"
+                  type="button"
+                  onClick={cancelEdit}
+                >
+                  Cancelar
+                </button>
+              ) : null}
+            </div>
           </div>
         </form>
 
@@ -100,6 +170,15 @@ export function CompaniesPage() {
                   <p>Usuarios: {row.users_count}</p>
                   <p>Modulos activos: {row.active_modules}</p>
                   <p>Meta Emaus: {row.valor_objetivo_emaus}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    className="btn-secondary"
+                    type="button"
+                    onClick={() => startEdit(row)}
+                  >
+                    Editar
+                  </button>
                 </div>
               </div>
             ))}

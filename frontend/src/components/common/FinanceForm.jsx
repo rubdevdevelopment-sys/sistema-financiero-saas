@@ -22,6 +22,16 @@ const initialState = {
   receipt_reference: ""
 };
 
+function getInitialState(mode) {
+  return {
+    ...initialState,
+    income_type:
+      mode === "income"
+        ? "participant_payment"
+        : "other"
+  };
+}
+
 export function FinanceForm({
   title,
   categories,
@@ -31,22 +41,8 @@ export function FinanceForm({
   onSubmit
 }) {
 const form = useForm({
-  defaultValues: {
-    income_type: "participant_payment",
-    category_id: "",
-    participant_id: "",
-    title: "",
-    amount: 0,
-    movement_date: "",
-    payment_method: "",
-    status: "completed",
-    installment_number: "",
-    receipt_number: "",
-    description: "",
-    responsible: "",
-    attachment_url: "",
-    notes: ""
-  }
+  resolver: zodResolver(financeSchema),
+  defaultValues: getInitialState(mode)
 });
 
 useEffect(() => {
@@ -54,7 +50,7 @@ useEffect(() => {
     form.reset({
       income_type:
         initialData.income_type ||
-        "participant_payment",
+        getInitialState(mode).income_type,
 
       category_id:
         initialData.category_id || "",
@@ -94,10 +90,20 @@ useEffect(() => {
         initialData.attachment_url || "",
 
       notes:
-        initialData.notes || ""
+        initialData.notes || "",
+
+      authorized_by:
+        initialData.authorized_by || "",
+
+      receipt_reference:
+        initialData.receipt_reference || ""
     });
+
+    return;
   }
-}, [initialData, form]);
+
+  form.reset(getInitialState(mode));
+}, [initialData, mode, form]);
 
   const errors = form.formState.errors;
 
@@ -112,12 +118,9 @@ useEffect(() => {
 
 async function submit(values) {
 
-  console.log("VALUES:");
-  console.log(values);
-
   await onSubmit(values);
 
-  form.reset(initialState);
+  form.reset(getInitialState(mode));
 }
 
   return (

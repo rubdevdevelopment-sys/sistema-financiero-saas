@@ -24,8 +24,11 @@ import { getApiErrorMessage } from "../../utils/api.js";
 
 import {
   formatCurrency,
-  formatDate
+  formatDate,
+  integer
 } from "../../utils/format.js";
+
+const plainValue = (value) => value;
 
 function estadoColor(status) {
   if (status === "completed") return "bg-emerald-500";
@@ -55,6 +58,8 @@ function incomeTypeLabel(type) {
 export function DashboardPage() {
   const dashboardQuery = useQuery({
     queryKey: ["dashboard"],
+    staleTime: 0,
+    refetchOnMount: "always",
 
     queryFn: async () => {
       const response =
@@ -88,33 +93,25 @@ export function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Aportes participantes"
-          value={formatCurrency(
-            data?.cards?.aportesParticipantes ?? 0
-          )}
+          value={data?.cards?.aportesParticipantes ?? 0}
           accent="bg-emerald-500"
         />
 
         <StatCard
           label="Otros ingresos"
-          value={formatCurrency(
-            data?.cards?.otrosIngresos ?? 0
-          )}
+          value={data?.cards?.otrosIngresos ?? 0}
           accent="bg-violet-500"
         />
 
         <StatCard
           label="Ingresos generales"
-          value={formatCurrency(
-            data?.cards?.totalIngresosGenerales ?? 0
-          )}
+          value={data?.cards?.totalIngresosGenerales ?? 0}
           accent="bg-brand-500"
         />
 
         <StatCard
           label="Total gastos"
-          value={formatCurrency(
-            data?.cards?.totalGastos ?? 0
-          )}
+          value={data?.cards?.totalGastos ?? 0}
           accent="bg-rose-500"
         />
       </div>
@@ -122,17 +119,13 @@ export function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Total recaudado"
-          value={formatCurrency(
-            data?.cards?.totalRecaudado ?? 0
-          )}
+          value={data?.cards?.totalRecaudado ?? 0}
           accent="bg-emerald-500"
         />
 
         <StatCard
           label="Saldo actual caja"
-          value={formatCurrency(
-            data?.cards?.saldoActualCaja ?? 0
-          )}
+          value={data?.cards?.saldoActualCaja ?? 0}
           accent="bg-sky-500"
         />
 
@@ -142,13 +135,12 @@ export function DashboardPage() {
             data?.cards?.porcentajeCumplimiento ?? 0
           )}%`}
           accent="bg-amber-500"
+          formatter={plainValue}
         />
 
         <StatCard
           label="Recaudo del mes"
-          value={formatCurrency(
-            data?.cards?.recaudoDelMes ?? 0
-          )}
+          value={data?.cards?.recaudoDelMes ?? 0}
           accent="bg-cyan-500"
         />
       </div>
@@ -158,6 +150,7 @@ export function DashboardPage() {
           label="Participantes"
           value={data?.cards?.totalParticipantes ?? 0}
           accent="bg-slate-900"
+          formatter={integer}
         />
 
         <StatCard
@@ -166,6 +159,7 @@ export function DashboardPage() {
             data?.cards?.participantesCompletos ?? 0
           }
           accent="bg-emerald-500"
+          formatter={integer}
         />
 
         <StatCard
@@ -174,6 +168,7 @@ export function DashboardPage() {
             data?.cards?.participantesPendientes ?? 0
           }
           accent="bg-amber-500"
+          formatter={integer}
         />
 
         <StatCard
@@ -182,6 +177,7 @@ export function DashboardPage() {
             data?.cards?.movimientosPendientes ?? 0
           }
           accent="bg-rose-500"
+          formatter={integer}
         />
       </div>
 

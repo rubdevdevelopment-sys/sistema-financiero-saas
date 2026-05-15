@@ -26,6 +26,42 @@ const initialFilters = {
   date_to: ""
 };
 
+function emptyToNull(value) {
+  return value === "" || value === undefined
+    ? null
+    : value;
+}
+
+function normalizeIncomePayload(values) {
+  const incomeType =
+    values.income_type || "participant_payment";
+  const isParticipantPayment =
+    incomeType === "participant_payment";
+
+  return {
+    income_type: incomeType,
+    category_id: values.category_id,
+    participant_id: isParticipantPayment
+      ? emptyToNull(values.participant_id)
+      : null,
+    title: values.title?.trim(),
+    description: emptyToNull(values.description?.trim()),
+    amount: Number(values.amount),
+    movement_date: values.movement_date,
+    payment_method: values.payment_method?.trim(),
+    status: values.status || "completed",
+    installment_number:
+      isParticipantPayment &&
+      values.installment_number !== ""
+        ? Number(values.installment_number)
+        : null,
+    receipt_number: emptyToNull(values.receipt_number?.trim()),
+    responsible: emptyToNull(values.responsible?.trim()),
+    attachment_url: emptyToNull(values.attachment_url?.trim()),
+    notes: emptyToNull(values.notes?.trim())
+  };
+}
+
 export function IncomesPage() {
   const { user } = useAuth();
 
@@ -144,8 +180,6 @@ const participants =
   participantsQuery.data || [];
 
 
-  console.log(incomesQuery.data);
-
 const incomes = incomesQuery.data?.items || [];
 
   const categoryOptions =
@@ -155,9 +189,6 @@ const incomes = incomesQuery.data?.items || [];
 
   const movementMutation = useMutation({
    mutationFn: async ({ id, payload }) => {
-
-  console.log("PAYLOAD RECIBIDO:");
-  console.log(payload);
 
   if (id) {
     return api.put(
@@ -195,10 +226,6 @@ const incomes = incomesQuery.data?.items || [];
     },
 
 onError: (error) => {
-
-  console.log("ERROR BACKEND:");
-  console.log(error.response?.data);
-
   toast.error(
     getApiErrorMessage(
       error,
@@ -591,37 +618,9 @@ pagination={
   mode="income"
   initialData={editing}
 onSubmit={async (values) => {
-
-  console.log("PAYLOAD RECIBIDO:");
-  console.log(values);
-
-  const normalizedPayload = {
-    ...values,
-
-    amount: Number(values.amount),
-
-    category_id:
-      values.category_id || null,
-
-    movement_date:
-      values.movement_date || null,
-
-    payment_method:
-      values.payment_method || null,
-
-    status:
-      values.status || null,
-
-    title:
-      values.title || null
-  };
-
-  console.log("NORMALIZED:");
-  console.log(normalizedPayload);
-
   await movementMutation.mutateAsync({
     id: editing?.id,
-    payload: normalizedPayload
+    payload: normalizeIncomePayload(values)
   });
 }}
 />
