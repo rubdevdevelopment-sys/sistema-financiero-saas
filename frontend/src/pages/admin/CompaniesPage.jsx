@@ -15,6 +15,16 @@ const emptyCompany = {
   active: true
 };
 
+function normalizeCompanySlug(value) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function CompaniesPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
@@ -36,10 +46,10 @@ export function CompaniesPage() {
     event.preventDefault();
 
     const payload = {
-      name: form.name,
-      nit: form.nit || null,
-      email: form.email || null,
-      phone: form.phone || null,
+      name: form.name.trim(),
+      nit: form.nit.trim() || null,
+      email: form.email.trim() || null,
+      phone: form.phone.trim() || null,
       currency: form.currency || "COP",
       timezone: form.timezone || "America/Bogota",
       valor_objetivo_emaus: Number(form.valor_objetivo_emaus) || 0,
@@ -51,7 +61,7 @@ export function CompaniesPage() {
     } else {
       await api.post("/companies", {
         ...payload,
-        slug: form.slug
+        slug: normalizeCompanySlug(form.slug)
       });
     }
 
