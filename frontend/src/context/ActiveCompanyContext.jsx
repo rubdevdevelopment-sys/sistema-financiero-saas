@@ -29,6 +29,7 @@ export function ActiveCompanyProvider({ children }) {
       id: company.id,
       name: company.name,
       slug: company.slug,
+      business_model: company.business_model,
       session
     };
 
@@ -54,7 +55,8 @@ export function ActiveCompanyProvider({ children }) {
     return {
       id: user.company_id,
       name: user.company_name,
-      slug: user.company_slug
+      slug: user.company_slug,
+      business_model: user.business_model
     };
   }, [supportCompany, user]);
 

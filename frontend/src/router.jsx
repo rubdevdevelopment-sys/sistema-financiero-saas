@@ -11,6 +11,10 @@ const DashboardPage = lazy(() => import("./pages/dashboard/DashboardPage.jsx"));
 const ParticipantsPage = lazy(() => import("./pages/participants/ParticipantsPage.jsx"));
 const IncomesPage = lazy(() => import("./pages/incomes/IncomesPage.jsx"));
 const ExpensesPage = lazy(() => import("./pages/expenses/ExpensesPage.jsx"));
+const FundDashboard = lazy(() => import("./pages/funds/FundDashboard.jsx"));
+const FundCyclesPage = lazy(() => import("./pages/funds/FundCyclesPage.jsx"));
+const FundMembersPage = lazy(() => import("./pages/funds/FundMembersPage.jsx"));
+const FundModulePage = lazy(() => import("./pages/funds/FundModulePage.jsx"));
 const CompaniesPage = lazy(() => import("./pages/admin/CompaniesPage.jsx"));
 const UsersPage = lazy(() => import("./pages/admin/UsersPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/settings/SettingsPage.jsx"));
@@ -94,6 +98,38 @@ export const router = createBrowserRouter([
           {
             path: "egresos",
             element: withSuspense(<ExpensesPage />)
+          },
+          {
+            path: "fondos",
+            element: withSuspense(<FundDashboard />)
+          },
+          {
+            path: "fondos/ciclos",
+            element: withSuspense(<FundCyclesPage />)
+          },
+          {
+            path: "fondos/miembros",
+            element: withSuspense(<FundMembersPage />)
+          },
+          {
+            path: "fondos/cupos",
+            element: withSuspense(<FundModulePage type="shares" />)
+          },
+          {
+            path: "fondos/prestamos",
+            element: withSuspense(<FundModulePage type="loans" />)
+          },
+          {
+            path: "fondos/multas",
+            element: withSuspense(<FundModulePage type="penalties" />)
+          },
+          {
+            path: "fondos/cierre",
+            element: withSuspense(<FundModulePage type="settlement" />)
+          },
+          {
+            path: "fondos/reparto",
+            element: withSuspense(<FundModulePage type="distributions" />)
           },
           {
             path: "admin/empresas",

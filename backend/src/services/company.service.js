@@ -21,8 +21,8 @@ export async function listCompanies() {
 export async function createCompany(data) {
   const { rows } = await query(
     `
-      insert into companies (name, slug, nit, email, phone, currency, timezone, valor_objetivo_emaus, active)
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      insert into companies (name, slug, nit, email, phone, currency, timezone, business_model, valor_objetivo_emaus, active)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       returning *
     `,
     [
@@ -33,6 +33,7 @@ export async function createCompany(data) {
       data.phone ?? null,
       data.currency,
       data.timezone,
+      data.business_model,
       data.valor_objetivo_emaus,
       data.active
     ]
@@ -41,6 +42,10 @@ export async function createCompany(data) {
   const company = rows[0];
 
   const modules = ["dashboard", "participants", "incomes", "expenses", "admin"];
+  if (data.business_model !== "standard") {
+    modules.push("cooperative_fund");
+  }
+
   for (const moduleKey of modules) {
     await query(
       `
@@ -64,8 +69,9 @@ export async function updateCompany(id, data) {
           phone = $5,
           currency = $6,
           timezone = $7,
-          valor_objetivo_emaus = $8,
-          active = $9,
+          business_model = $8,
+          valor_objetivo_emaus = $9,
+          active = $10,
           updated_at = now()
       where id = $1
       returning *
@@ -78,6 +84,7 @@ export async function updateCompany(id, data) {
       data.phone ?? null,
       data.currency,
       data.timezone,
+      data.business_model,
       data.valor_objetivo_emaus,
       data.active
     ]
@@ -87,7 +94,21 @@ export async function updateCompany(id, data) {
     throw new ApiError(404, "Empresa no encontrada");
   }
 
-  return rows[0];
+  const company = rows[0];
+
+  if (company.business_model !== "standard") {
+    await query(
+      `
+        insert into company_modules (company_id, module_key, enabled)
+        values ($1, 'cooperative_fund', true)
+        on conflict (company_id, module_key)
+        do update set enabled = true
+      `,
+      [company.id]
+    );
+  }
+
+  return company;
 }
 
 export async function getCurrentCompany(requestUser, filters = {}) {

@@ -33,6 +33,16 @@ const nullableEmail = z.preprocess(
   z.string().email().optional().nullable()
 );
 
+const businessModelSchema = z
+  .enum([
+    "standard",
+    "cooperative_fund",
+    "investment_fund",
+    "rotating_capital",
+    "lending_group"
+  ])
+  .default("standard");
+
 export const createCompanySchema = z.object({
   body: z.object({
     name: z.string().trim().min(2),
@@ -45,6 +55,7 @@ export const createCompanySchema = z.object({
     phone: nullableString,
     currency: z.string().min(3).max(10).default("COP"),
     timezone: z.string().default("America/Bogota"),
+    business_model: businessModelSchema,
     valor_objetivo_emaus: z.coerce.number().min(0).default(460000),
     active: z.boolean().optional().default(true)
   }),
@@ -60,6 +71,7 @@ export const updateCompanySchema = z.object({
     phone: nullableString,
     currency: z.string().min(3).max(10),
     timezone: z.string(),
+    business_model: businessModelSchema,
     valor_objetivo_emaus: z.coerce.number().min(0),
     active: z.boolean()
   }),

@@ -7,6 +7,14 @@ const menu = [
   { to: "/participantes", label: "Participantes" },
   { to: "/ingresos", label: "Aportes" },
   { to: "/egresos", label: "Egresos" },
+  { to: "/fondos", label: "Fondos" },
+  { to: "/fondos/ciclos", label: "Ciclos" },
+  { to: "/fondos/miembros", label: "Miembros fondo" },
+  { to: "/fondos/cupos", label: "Cupos" },
+  { to: "/fondos/prestamos", label: "Prestamos" },
+  { to: "/fondos/multas", label: "Multas" },
+  { to: "/fondos/cierre", label: "Cierre anual" },
+  { to: "/fondos/reparto", label: "Reparto" },
   { to: "/admin/empresas", label: "Empresas", roles: ["super_admin"] },
   { to: "/admin/usuarios", label: "Usuarios", roles: ["super_admin", "admin"] },
   { to: "/configuracion", label: "Configuracion" }
@@ -76,7 +84,7 @@ export function AppShell() {
               <div>
                 <p className="text-sm text-slate-500">Panel administrativo y financiero</p>
                 <h2 className="text-xl font-semibold text-slate-950">
-                  Recaudo y gastos especializados por empresa
+                  Recaudo, gastos y fondos especializados por empresa
                 </h2>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
