@@ -25,6 +25,7 @@ import {
   createFundPenaltySchema,
   createFundQuotaSchema,
   fundQuerySchema,
+  generateExtraordinaryContributionSchema,
   generateContributionsSchema,
   registerContributionPaymentSchema,
   updateFundCycleSchema,
@@ -91,6 +92,12 @@ fundRouter.post(
   "/contributions/generate",
   authorize("super_admin", "admin", "operator"),
   validate(generateContributionsSchema),
+  asyncHandler(generateFundContributionsAction)
+);
+fundRouter.post(
+  "/contributions/extraordinary",
+  authorize("super_admin", "admin", "operator"),
+  validate(generateExtraordinaryContributionSchema),
   asyncHandler(generateFundContributionsAction)
 );
 fundRouter.put(

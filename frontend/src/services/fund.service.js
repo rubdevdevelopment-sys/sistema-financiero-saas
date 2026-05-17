@@ -76,6 +76,11 @@ export async function generateFundContributions(payload) {
   return response.data.data;
 }
 
+export async function generateExtraordinaryContribution(payload) {
+  const response = await api.post("/funds/contributions/extraordinary", payload);
+  return response.data.data;
+}
+
 export async function registerFundContributionPayment(id, payload) {
   const response = await api.put(`/funds/contributions/${id}/payment`, payload);
   return response.data.data;

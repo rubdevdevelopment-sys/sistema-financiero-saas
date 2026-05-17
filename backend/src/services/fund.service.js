@@ -24,15 +24,54 @@ function number(value) {
   return Number(value ?? 0);
 }
 
-function contributionStatus(expected, paid, month, year) {
+function contributionStatus(expected, paid, dueDate) {
   const pending = Math.max(expected - paid, 0);
   const today = new Date();
-  const dueDate = new Date(Number(year), Number(month), 0);
+  const normalizedDueDate = dueDate ? new Date(dueDate) : today;
 
   if (pending <= 0) return { pending, status: "paid" };
   if (paid > 0) return { pending, status: "partial" };
-  if (dueDate < today) return { pending, status: "overdue" };
+  if (normalizedDueDate < today) return { pending, status: "overdue" };
   return { pending, status: "pending" };
+}
+
+function ordinaryDueDate(year, month) {
+  return `${year}-${String(month).padStart(2, "0")}-10`;
+}
+
+function monthName(month) {
+  const names = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre"
+  ];
+
+  return names[Number(month) - 1] ?? `Mes ${month}`;
+}
+
+async function refreshOverdueContributions(companyId) {
+  await query(
+    `
+      update fund_contributions
+      set status = 'overdue',
+          updated_at = now()
+      where company_id = $1
+        and deleted_at is null
+        and status = 'pending'
+        and pending_amount > 0
+        and due_date < current_date
+    `,
+    [companyId]
+  );
 }
 
 async function getCycle(id, requestUser) {
@@ -144,28 +183,90 @@ async function assertMemberDocumentAvailable(companyId, documentNumber, excludeI
 
 async function getCycleContribution(cycleId) {
   const { rows } = await query(
-    `select monthly_contribution, start_date, end_date from fund_cycles where id = $1 limit 1`,
+    `select monthly_contribution from fund_cycles where id = $1 limit 1`,
     [cycleId]
   );
 
   if (!rows[0]) throw new ApiError(404, "Ciclo no encontrado");
   return {
-    monthlyContribution: number(rows[0].monthly_contribution),
-    startDate: rows[0].start_date,
-    endDate: rows[0].end_date
+    monthlyContribution: number(rows[0].monthly_contribution)
   };
 }
 
-function cycleMonthCount(startDate, endDate) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  return Math.max((end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth() + 1, 1);
+async function generateOrdinaryContributionsForQuota(quota) {
+  const { rows } = await query(
+    `
+      select year, monthly_contribution
+      from fund_cycles
+      where id = $1 and deleted_at is null
+      limit 1
+    `,
+    [quota.cycle_id]
+  );
+
+  const cycle = rows[0];
+  if (!cycle) return 0;
+
+  let created = 0;
+  const quotaCount = number(quota.quota_count);
+  const valuePerQuota = number(cycle.monthly_contribution);
+  const expected = quotaCount * valuePerQuota;
+
+  for (let month = 1; month <= 11; month += 1) {
+    const result = await query(
+      `
+        insert into fund_contributions (
+          company_id, member_id, cycle_id, quota_assignment_id,
+          contribution_type, title, month, year, installment_order, due_date,
+          quota_value_snapshot, expected_amount, paid_amount, pending_amount,
+          status, generated_automatically
+        )
+        values (
+          $1, $2, $3, $4,
+          'ordinary', $5, $6, $7, $6, $8,
+          $9, $10, 0, $10,
+          case when $8::date < current_date then 'overdue' else 'pending' end,
+          true
+        )
+        on conflict (quota_assignment_id, contribution_type, installment_order, year)
+        where deleted_at is null
+        do update set expected_amount = excluded.expected_amount,
+                      pending_amount = greatest(excluded.expected_amount - fund_contributions.paid_amount, 0),
+                      quota_value_snapshot = excluded.quota_value_snapshot,
+                      due_date = excluded.due_date,
+                      title = excluded.title,
+                      status = case
+                        when fund_contributions.paid_amount >= excluded.expected_amount then 'paid'
+                        when fund_contributions.paid_amount > 0 then 'partial'
+                        when excluded.due_date < current_date then 'overdue'
+                        else 'pending'
+                      end,
+                      updated_at = now()
+      `,
+      [
+        quota.company_id,
+        quota.member_id,
+        quota.cycle_id,
+        quota.id,
+        `Cuota ordinaria ${monthName(month)}`,
+        month,
+        number(cycle.year),
+        ordinaryDueDate(cycle.year, month),
+        valuePerQuota,
+        expected
+      ]
+    );
+    created += result.rowCount ?? 0;
+  }
+
+  return created;
 }
 
 export async function getFundOverview(requestUser, filters = {}) {
   const companyId = resolveCompanyId(filters, requestUser);
+  await refreshOverdueContributions(companyId);
 
-  const [companyResult, cardsResult, cycleResult, memberResult, quotaResult, contributionResult, penaltyResult] =
+  const [companyResult, cardsResult, cycleResult, memberResult, quotaResult, contributionResult, penaltyResult, memberStatusResult] =
     await Promise.all([
       query(`select id, name, slug, business_model from companies where id = $1 limit 1`, [companyId]),
       query(
@@ -174,7 +275,11 @@ export async function getFundOverview(requestUser, filters = {}) {
             coalesce(sum(paid_amount), 0) as capital_total,
             coalesce(sum(paid_amount) filter (where month = extract(month from current_date)::int and year = extract(year from current_date)::int), 0) as month_contributions,
             coalesce(sum(pending_amount), 0) as pending_portfolio,
-            coalesce(sum(paid_amount), 0) as available_cash
+            coalesce(sum(paid_amount), 0) as available_cash,
+            coalesce(sum(expected_amount) filter (where contribution_type = 'extraordinary'), 0) as extraordinary_expected,
+            coalesce(sum(pending_amount) filter (where status = 'overdue'), 0) as overdue_amount,
+            count(*) filter (where status <> 'paid')::int as pending_count,
+            count(*) filter (where status = 'overdue')::int as overdue_count
           from fund_contributions
           where company_id = $1 and deleted_at is null
         `,
@@ -184,7 +289,22 @@ export async function getFundOverview(requestUser, filters = {}) {
       query(`select count(*) filter (where status = 'active')::int as active_members from fund_members where company_id = $1 and deleted_at is null`, [companyId]),
       query(`select coalesce(sum(quota_count), 0) as total_quotas from fund_member_quotas where company_id = $1 and status = 'active' and deleted_at is null`, [companyId]),
       query(`select coalesce(sum(pending_amount) filter (where status = 'overdue'), 0) as overdue_amount from fund_contributions where company_id = $1 and deleted_at is null`, [companyId]),
-      query(`select coalesce(sum(amount) filter (where status = 'pending'), 0) as pending_penalties from fund_penalties where company_id = $1 and deleted_at is null`, [companyId])
+      query(`select coalesce(sum(amount) filter (where status = 'pending'), 0) as pending_penalties from fund_penalties where company_id = $1 and deleted_at is null`, [companyId]),
+      query(
+        `
+          select
+            count(distinct m.id) filter (where overdue.member_id is null)::int as members_current,
+            count(distinct overdue.member_id)::int as members_overdue
+          from fund_members m
+          left join (
+            select distinct member_id
+            from fund_contributions
+            where company_id = $1 and deleted_at is null and status = 'overdue'
+          ) overdue on overdue.member_id = m.id
+          where m.company_id = $1 and m.deleted_at is null and m.status = 'active'
+        `,
+        [companyId]
+      )
     ]);
 
   if (!companyResult.rows[0]) throw new ApiError(404, "Empresa no encontrada");
@@ -199,7 +319,12 @@ export async function getFundOverview(requestUser, filters = {}) {
       capitalRecaudado: number(cards.capital_total),
       aportesDelMes: number(cards.month_contributions),
       carteraPendiente: number(cards.pending_portfolio),
+      cuotasPendientes: number(cards.pending_count),
+      cuotasVencidas: number(cards.overdue_count),
+      extraordinarias: number(cards.extraordinary_expected),
       miembrosActivos: number(memberResult.rows[0]?.active_members),
+      miembrosAlDia: number(memberStatusResult.rows[0]?.members_current),
+      miembrosEnMora: number(memberStatusResult.rows[0]?.members_overdue),
       totalCupos: number(quotaResult.rows[0]?.total_quotas),
       mora: number(contributionResult.rows[0]?.overdue_amount) + number(penalties.pending_penalties),
       cajaDisponible: number(cards.available_cash),
@@ -469,7 +594,7 @@ export async function createFundQuota(data, requestUser) {
 
   const cycleInfo = await getCycleContribution(data.cycle_id);
   const monthlyPayment = data.quota_count * cycleInfo.monthlyContribution;
-  const totalExpected = monthlyPayment * cycleMonthCount(cycleInfo.startDate, cycleInfo.endDate);
+  const totalExpected = monthlyPayment * 11;
 
   const { rows } = await query(
     `
@@ -489,6 +614,7 @@ export async function createFundQuota(data, requestUser) {
     [companyId, data.member_id, data.cycle_id, data.quota_count, monthlyPayment, totalExpected, data.status]
   );
 
+  await generateOrdinaryContributionsForQuota(rows[0]);
   return rows[0];
 }
 
@@ -496,7 +622,7 @@ export async function updateFundQuota(id, data, requestUser) {
   const existing = await getQuota(id, requestUser);
   const cycleInfo = await getCycleContribution(data.cycle_id);
   const monthlyPayment = data.quota_count * cycleInfo.monthlyContribution;
-  const totalExpected = monthlyPayment * cycleMonthCount(cycleInfo.startDate, cycleInfo.endDate);
+  const totalExpected = monthlyPayment * 11;
 
   const { rows } = await query(
     `
@@ -514,15 +640,17 @@ export async function updateFundQuota(id, data, requestUser) {
     [existing.id, data.member_id, data.cycle_id, data.quota_count, monthlyPayment, totalExpected, data.status]
   );
 
+  await generateOrdinaryContributionsForQuota(rows[0]);
   return rows[0];
 }
 
 export async function listFundContributions(requestUser, filters = {}) {
   const companyId = resolveCompanyId(filters, requestUser);
+  await refreshOverdueContributions(companyId);
   const params = [companyId];
   const where = ["fc.company_id = $1", "fc.deleted_at is null"];
 
-  for (const key of ["cycle_id", "member_id", "status", "year", "month"]) {
+  for (const key of ["cycle_id", "member_id", "status", "year", "month", "contribution_type"]) {
     if (filters[key]) {
       params.push(filters[key]);
       where.push(`fc.${key} = $${params.length}`);
@@ -532,11 +660,13 @@ export async function listFundContributions(requestUser, filters = {}) {
   const { rows } = await query(
     `
       select fc.*, m.full_name as member_name, c.name as cycle_name
+            , q.quota_count
       from fund_contributions fc
       join fund_members m on m.id = fc.member_id
       join fund_cycles c on c.id = fc.cycle_id
+      join fund_member_quotas q on q.id = fc.quota_assignment_id
       where ${where.join(" and ")}
-      order by fc.year desc, fc.month desc, m.full_name asc
+      order by fc.year desc, fc.installment_order asc, m.full_name asc
     `,
     params
   );
@@ -545,12 +675,15 @@ export async function listFundContributions(requestUser, filters = {}) {
     ...item,
     expected_amount: number(item.expected_amount),
     paid_amount: number(item.paid_amount),
-    pending_amount: number(item.pending_amount)
+    pending_amount: number(item.pending_amount),
+    quota_value_snapshot: number(item.quota_value_snapshot),
+    quota_count: number(item.quota_count)
   }));
 }
 
 export async function generateFundContributions(data, requestUser) {
   const companyId = resolveCompanyId(data, requestUser);
+  const cycle = await getCycle(data.cycle_id, requestUser);
   const quotas = await query(
     `
       select *
@@ -562,23 +695,63 @@ export async function generateFundContributions(data, requestUser) {
 
   let created = 0;
 
-  for (const quota of quotas.rows) {
-    const expected = number(quota.monthly_payment);
-    const result = await query(
-      `
-        insert into fund_contributions (
-          company_id, member_id, cycle_id, quota_assignment_id, month, year,
-          expected_amount, paid_amount, pending_amount, status
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, 0, $7, 'pending')
-        on conflict (quota_assignment_id, month, year) do nothing
-      `,
-      [companyId, quota.member_id, quota.cycle_id, quota.id, data.month, data.year, expected]
-    );
-    created += result.rowCount ?? 0;
+  if (data.value_per_quota) {
+    const dueDate = new Date(data.due_date);
+    const month = dueDate.getMonth() + 1;
+    const year = dueDate.getFullYear();
+    const order = 100 + month;
+
+    for (const quota of quotas.rows) {
+      const valuePerQuota = number(data.value_per_quota);
+      const expected = number(quota.quota_count) * valuePerQuota;
+      const result = await query(
+        `
+          insert into fund_contributions (
+            company_id, member_id, cycle_id, quota_assignment_id,
+            contribution_type, title, month, year, installment_order, due_date,
+            quota_value_snapshot, expected_amount, paid_amount, pending_amount,
+            status, generated_automatically
+          )
+          values (
+            $1, $2, $3, $4,
+            'extraordinary', $5, $6, $7, $8, $9,
+            $10, $11, 0, $11,
+            case when $9::date < current_date then 'overdue' else 'pending' end,
+            true
+          )
+          on conflict (quota_assignment_id, contribution_type, installment_order, year)
+          where deleted_at is null
+          do nothing
+        `,
+        [
+          companyId,
+          quota.member_id,
+          quota.cycle_id,
+          quota.id,
+          data.title,
+          month,
+          year,
+          order,
+          data.due_date,
+          valuePerQuota,
+          expected
+        ]
+      );
+      created += result.rowCount ?? 0;
+    }
+
+    return { generated: created, type: "extraordinary" };
   }
 
-  return { generated: created };
+  for (const quota of quotas.rows) {
+    created += await generateOrdinaryContributionsForQuota({
+      ...quota,
+      company_id: companyId,
+      cycle_id: cycle.id
+    });
+  }
+
+  return { generated: created, type: "ordinary" };
 }
 
 export async function registerFundContributionPayment(id, data, requestUser) {
@@ -594,8 +767,7 @@ export async function registerFundContributionPayment(id, data, requestUser) {
   const { pending, status } = contributionStatus(
     number(contribution.expected_amount),
     paid,
-    contribution.month,
-    contribution.year
+    contribution.due_date
   );
 
   const result = await query(

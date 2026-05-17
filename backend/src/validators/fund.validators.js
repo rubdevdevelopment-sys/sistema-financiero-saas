@@ -22,6 +22,7 @@ const querySchema = z.object({
   cycle_id: z.string().uuid().optional(),
   member_id: z.string().uuid().optional(),
   status: z.string().trim().optional(),
+  contribution_type: z.enum(["ordinary", "extraordinary", "penalty"]).optional(),
   year: z.coerce.number().int().min(2000).optional(),
   month: z.coerce.number().int().min(1).max(12).optional()
 });
@@ -122,9 +123,19 @@ export const updateFundQuotaSchema = z.object({
 export const generateContributionsSchema = z.object({
   body: z.object({
     company_id: z.string().uuid().optional(),
+    cycle_id: z.string().uuid()
+  }),
+  params: z.object({}).optional(),
+  query: z.object({}).optional()
+});
+
+export const generateExtraordinaryContributionSchema = z.object({
+  body: z.object({
+    company_id: z.string().uuid().optional(),
     cycle_id: z.string().uuid(),
-    year: z.coerce.number().int().min(2000),
-    month: z.coerce.number().int().min(1).max(12)
+    title: z.string().trim().min(3).max(160),
+    due_date: z.string().trim().min(10),
+    value_per_quota: z.coerce.number().positive()
   }),
   params: z.object({}).optional(),
   query: z.object({}).optional()

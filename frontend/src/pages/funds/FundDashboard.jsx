@@ -8,8 +8,6 @@ import { getFundOverview } from "../../services/fund.service.js";
 import { getApiErrorMessage } from "../../utils/api.js";
 import { currency, integer } from "../../utils/format.js";
 
-const percent = (value) => `${Number(value ?? 0).toFixed(2)}%`;
-
 const moduleRoutes = {
   cycles: "/fondos/ciclos",
   memberships: "/fondos/miembros",
@@ -58,15 +56,22 @@ export function FundDashboard() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Capital recaudado" value={data?.cards?.capitalRecaudado ?? 0} accent="bg-brand-500" />
         <StatCard label="Aportes del mes" value={data?.cards?.aportesDelMes ?? 0} accent="bg-sky-500" />
-        <StatCard label="Cartera pendiente" value={data?.cards?.carteraPendiente ?? 0} accent="bg-amber-500" />
+        <StatCard label="Cuotas pendientes" value={data?.cards?.cuotasPendientes ?? 0} accent="bg-amber-500" formatter={integer} />
         <StatCard label="Caja disponible" value={data?.cards?.cajaDisponible ?? 0} accent="bg-slate-900" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Miembros activos" value={data?.cards?.miembrosActivos ?? 0} accent="bg-cyan-500" formatter={integer} />
-        <StatCard label="Total cupos" value={data?.cards?.totalCupos ?? 0} accent="bg-teal-500" formatter={integer} />
-        <StatCard label="Ciclos activos" value={data?.cards?.ciclosActivos ?? 0} accent="bg-violet-500" formatter={integer} />
-        <StatCard label="Mora y multas" value={data?.cards?.mora ?? 0} accent="bg-rose-500" />
+        <StatCard label="Cuotas vencidas" value={data?.cards?.cuotasVencidas ?? 0} accent="bg-rose-500" formatter={integer} />
+        <StatCard label="Extraordinarias" value={data?.cards?.extraordinarias ?? 0} accent="bg-cyan-500" />
+        <StatCard label="Miembros al dia" value={data?.cards?.miembrosAlDia ?? 0} accent="bg-emerald-500" formatter={integer} />
+        <StatCard label="Miembros en mora" value={data?.cards?.miembrosEnMora ?? 0} accent="bg-rose-600" formatter={integer} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Cartera pendiente" value={data?.cards?.carteraPendiente ?? 0} accent="bg-amber-500" />
+        <StatCard label="Mora total" value={data?.cards?.mora ?? 0} accent="bg-rose-500" />
+        <StatCard label="Miembros activos" value={data?.cards?.miembrosActivos ?? 0} accent="bg-teal-500" formatter={integer} />
+        <StatCard label="Total cupos" value={data?.cards?.totalCupos ?? 0} accent="bg-violet-500" formatter={integer} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -107,12 +112,12 @@ export function FundDashboard() {
               <strong className="text-slate-950">{Number(data?.cards?.totalCupos ?? 0).toFixed(2)}</strong>
             </div>
             <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
-              <span>Aporte mensual esperado</span>
-              <strong className="text-slate-950">{currency(data?.cards?.aporteMensualEsperado ?? 0)}</strong>
+              <span>Cartera pendiente</span>
+              <strong className="text-slate-950">{currency(data?.cards?.carteraPendiente ?? 0)}</strong>
             </div>
             <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
-              <span>Prestamos activos</span>
-              <strong className="text-slate-950">{integer(data?.cards?.prestamosActivos ?? 0)}</strong>
+              <span>Mora total</span>
+              <strong className="text-slate-950">{currency(data?.cards?.mora ?? 0)}</strong>
             </div>
           </div>
         </section>
