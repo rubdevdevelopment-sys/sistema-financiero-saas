@@ -90,7 +90,16 @@ export async function updateCompany(id, data) {
   return rows[0];
 }
 
-export async function getCurrentCompany(requestUser) {
+export async function getCurrentCompany(requestUser, filters = {}) {
+  const companyId =
+    requestUser.role === "super_admin" && filters.company_id
+      ? filters.company_id
+      : requestUser.companyId;
+
+  if (requestUser.role === "super_admin" && !filters.company_id) {
+    throw new ApiError(400, "Selecciona una empresa para ver su configuracion");
+  }
+
   const { rows } = await query(
     `
       select *
@@ -98,7 +107,7 @@ export async function getCurrentCompany(requestUser) {
       where id = $1
       limit 1
     `,
-    [requestUser.companyId]
+    [companyId]
   );
 
   if (!rows[0]) {

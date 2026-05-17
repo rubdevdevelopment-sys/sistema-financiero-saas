@@ -23,7 +23,7 @@ export async function updateCompanyAction(req, res) {
 }
 
 export async function getCurrentCompanyAction(req, res) {
-  const company = await getCurrentCompany(req.user);
+  const company = await getCurrentCompany(req.user, req.query);
   return sendSuccess(res, company, "Empresa actual obtenida");
 }
 

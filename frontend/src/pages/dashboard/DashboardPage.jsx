@@ -16,6 +16,7 @@ import {
 } from "recharts";
 
 import { api } from "../../services/api.js";
+import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { StatCard } from "../../components/common/StatCard.jsx";
@@ -56,14 +57,18 @@ function incomeTypeLabel(type) {
 }
 
 export function DashboardPage() {
+  const { activeCompany } = useActiveCompany();
+
   const dashboardQuery = useQuery({
-    queryKey: ["dashboard"],
+    queryKey: ["dashboard", activeCompany?.id],
     staleTime: 0,
     refetchOnMount: "always",
 
     queryFn: async () => {
       const response =
-        await api.get("/dashboard");
+        await api.get("/dashboard", {
+          params: activeCompany?.id ? { company_id: activeCompany.id } : undefined
+        });
 
       return response.data.data;
     }

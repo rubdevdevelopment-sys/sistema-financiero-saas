@@ -1,7 +1,15 @@
 import { query } from "../config/db.js";
+import { ApiError } from "../utils/ApiError.js";
 
-export async function getDashboardMetrics(requestUser) {
-  const companyId = requestUser.companyId;
+export async function getDashboardMetrics(requestUser, filters = {}) {
+  const companyId =
+    requestUser.role === "super_admin" && filters.company_id
+      ? filters.company_id
+      : requestUser.companyId;
+
+  if (requestUser.role === "super_admin" && !filters.company_id) {
+    throw new ApiError(400, "Selecciona una empresa para ver el dashboard financiero");
+  }
 
   const [
     monthlyKpis,

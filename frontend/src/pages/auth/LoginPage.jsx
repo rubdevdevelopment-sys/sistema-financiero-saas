@@ -17,8 +17,8 @@ export function LoginPage() {
     try {
       setLoading(true);
       setError("");
-      await login(form);
-      navigate("/dashboard");
+      const payload = await login(form);
+      navigate(payload.user?.role === "super_admin" ? "/super-admin" : "/dashboard");
     } catch (err) {
       setError(err.response?.data?.message ?? "No fue posible iniciar sesion");
     } finally {
@@ -31,13 +31,13 @@ export function LoginPage() {
       <section className="bg-hero px-8 py-12 text-white">
         <div className="mx-auto flex h-full max-w-2xl flex-col justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-brand-100">SaaS listo para crecer</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-sky-200">RubDev SaaS</p>
             <h1 className="mt-6 max-w-xl text-5xl font-semibold leading-tight">
-              Control administrativo y financiero profesional desde el primer cliente.
+              Control inteligente para negocios que crecen.
             </h1>
             <p className="mt-6 max-w-lg text-lg text-slate-300">
-              Base moderna para ingresos, egresos, dashboard ejecutivo, roles y operacion
-              multiempresa.
+              Gestiona, recauda y escala desde una sola plataforma con aislamiento
+              multiempresa y gobierno profesional.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">

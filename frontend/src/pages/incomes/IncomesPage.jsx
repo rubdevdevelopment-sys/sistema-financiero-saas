@@ -6,6 +6,7 @@ import { api } from "../../services/api.js";
 import { queryClient } from "../../services/queryClient.js";
 
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { FinanceForm } from "../../components/common/FinanceForm.jsx";
@@ -64,6 +65,7 @@ function normalizeIncomePayload(values) {
 
 export function IncomesPage() {
   const { user } = useAuth();
+  const { activeCompany } = useActiveCompany();
 
   const [filters, setFilters] = useState(initialFilters);
 
@@ -81,22 +83,24 @@ export function IncomesPage() {
     () => ({
       page,
       page_size: 10,
+      company_id: activeCompany?.id,
       search: deferredSearch || undefined,
       status: filters.status || undefined,
       category_id: filters.category_id || undefined,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined
     }),
-    [deferredSearch, filters, page]
+    [activeCompany?.id, deferredSearch, filters, page]
   );
 
   const categoryOptionsQuery = useQuery({
-    queryKey: ["category-options", "income"],
+    queryKey: ["category-options", "income", activeCompany?.id],
 
     queryFn: async () => {
       const response = await api.get("/categories", {
         params: {
           type: "income",
+          company_id: activeCompany?.id,
           active: "true",
           page: 1,
           page_size: 100
@@ -115,6 +119,7 @@ export function IncomesPage() {
     queryKey: [
       "categories",
       "income",
+      activeCompany?.id,
       categoryPage
     ],
 
@@ -122,6 +127,7 @@ export function IncomesPage() {
       const response = await api.get("/categories", {
         params: {
           type: "income",
+          company_id: activeCompany?.id,
           page: categoryPage,
           page_size: 8
         }
@@ -139,6 +145,7 @@ export function IncomesPage() {
   const incomesQuery = useQuery({
     queryKey: [
       "incomes",
+      activeCompany?.id,
       movementParams
     ],
 
@@ -158,10 +165,11 @@ export function IncomesPage() {
   });
 
   const participantsQuery = useQuery({
-  queryKey: ["participants-options"],
+  queryKey: ["participants-options", activeCompany?.id],
   queryFn: async () => {
     const response = await api.get("/participants", {
       params: {
+        company_id: activeCompany?.id,
         page: 1,
         page_size: 100
       }
@@ -189,17 +197,18 @@ const incomes = incomesQuery.data?.items || [];
 
   const movementMutation = useMutation({
    mutationFn: async ({ id, payload }) => {
+  const scopedPayload = { ...payload, company_id: activeCompany?.id || user.company_id };
 
   if (id) {
     return api.put(
       `/incomes/${id}`,
-      payload
+      scopedPayload
     );
   }
 
   return api.post(
     "/incomes",
-    payload
+    scopedPayload
   );
 },
 
@@ -363,7 +372,7 @@ const columns = [
 
       return api.post("/categories", {
         ...payload,
-        company_id: user.company_id
+        company_id: activeCompany?.id || user.company_id
       });
     },
 
