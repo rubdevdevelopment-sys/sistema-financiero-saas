@@ -19,12 +19,12 @@ const emptyCompany = {
 const businessModelOptions = [
   {
     value: "standard",
-    label: "Empresa administrativa normal",
+    label: "Gestion administrativa y recaudo",
     description: "Operacion SaaS tradicional para recaudo, ingresos, egresos y control administrativo."
   },
   {
     value: "cooperative_fund",
-    label: "Fondo cooperativo",
+    label: "Fondo solidario rotativo",
     description: "Modelo para cupos, aportes mensuales, capital colectivo y reparto proporcional."
   },
   {
@@ -43,6 +43,10 @@ const businessModelOptions = [
     description: "Modelo orientado a prestamos internos, cuotas, mora y multas."
   }
 ];
+
+const visibleBusinessModelOptions = businessModelOptions.filter((option) =>
+  ["standard", "cooperative_fund"].includes(option.value)
+);
 
 function normalizeCompanySlug(value) {
   return value
@@ -189,7 +193,7 @@ export function CompaniesPage() {
                   setForm({ ...form, business_model: event.target.value })
                 }
               >
-                {businessModelOptions.map((option) => (
+                {visibleBusinessModelOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

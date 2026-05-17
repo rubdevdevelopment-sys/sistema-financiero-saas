@@ -5,17 +5,19 @@ import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 export function RoleRedirect() {
   const { user } = useAuth();
   const { activeCompany } = useActiveCompany();
+  const businessModel = activeCompany?.business_model || user?.business_model || "standard";
+  const defaultPath = businessModel === "cooperative_fund" ? "/fondos" : "/dashboard";
 
   if (user?.role === "super_admin") {
     return (
       <Navigate
-        to={activeCompany?.id ? "/dashboard" : "/super-admin"}
+        to={activeCompany?.id ? defaultPath : "/super-admin"}
         replace
       />
     );
   }
 
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to={defaultPath} replace />;
 }
 
 export default RoleRedirect;

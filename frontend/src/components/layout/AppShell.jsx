@@ -1,31 +1,58 @@
-import { NavLink, Navigate, Outlet } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 
-const menu = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/participantes", label: "Participantes" },
-  { to: "/ingresos", label: "Aportes" },
-  { to: "/egresos", label: "Egresos" },
-  { to: "/fondos", label: "Fondos" },
-  { to: "/fondos/ciclos", label: "Ciclos" },
-  { to: "/fondos/miembros", label: "Miembros fondo" },
-  { to: "/fondos/cupos", label: "Cupos" },
-  { to: "/fondos/prestamos", label: "Prestamos" },
-  { to: "/fondos/multas", label: "Multas" },
-  { to: "/fondos/cierre", label: "Cierre anual" },
-  { to: "/fondos/reparto", label: "Reparto" },
-  { to: "/admin/empresas", label: "Empresas", roles: ["super_admin"] },
-  { to: "/admin/usuarios", label: "Usuarios", roles: ["super_admin", "admin"] },
-  { to: "/configuracion", label: "Configuracion" }
+const standardMenu = [
+  { key: "dashboard", to: "/dashboard", label: "Dashboard" },
+  { key: "participants", to: "/participantes", label: "Participantes" },
+  { key: "contributions", to: "/ingresos", label: "Aportes" },
+  { key: "incomes", to: "/ingresos", label: "Ingresos" },
+  { key: "expenses", to: "/egresos", label: "Egresos" },
+  { key: "users", to: "/admin/usuarios", label: "Usuarios", roles: ["super_admin", "admin"] },
+  { key: "settings", to: "/configuracion", label: "Configuracion" }
 ];
+
+const cooperativeFundMenu = [
+  { key: "fund-dashboard", to: "/fondos", label: "Dashboard fondo" },
+  { key: "fund-cycles", to: "/fondos/ciclos", label: "Ciclos" },
+  { key: "fund-members", to: "/fondos/miembros", label: "Miembros fondo" },
+  { key: "fund-shares", to: "/fondos/cupos", label: "Cupos" },
+  { key: "fund-loans", to: "/fondos/prestamos", label: "Prestamos" },
+  { key: "fund-penalties", to: "/fondos/multas", label: "Multas" },
+  { key: "fund-settlement", to: "/fondos/cierre", label: "Cierre anual" },
+  { key: "fund-distribution", to: "/fondos/reparto", label: "Reparto" },
+  { key: "users", to: "/admin/usuarios", label: "Usuarios", roles: ["super_admin", "admin"] },
+  { key: "settings", to: "/configuracion", label: "Configuracion" }
+];
+
+const standardOnlyPaths = ["/dashboard", "/participantes", "/ingresos", "/egresos"];
+const cooperativeOnlyPrefix = "/fondos";
 
 export function AppShell() {
   const { user, logout } = useAuth();
   const { activeCompany, isSupportMode, exitCompanySupport } = useActiveCompany();
+  const location = useLocation();
+  const businessModel = activeCompany?.business_model || user?.business_model || "standard";
+  const isCooperativeFund = businessModel === "cooperative_fund";
+  const menu = isCooperativeFund ? cooperativeFundMenu : standardMenu;
+  const productLabel = isCooperativeFund
+    ? "Fondo solidario rotativo"
+    : "Gestion administrativa y recaudo";
+  const headerTitle = isCooperativeFund
+    ? "Capital colectivo, cupos y prestamos internos"
+    : "Recaudo, ingresos y egresos por empresa";
+  const defaultPath = isCooperativeFund ? "/fondos" : "/dashboard";
 
   if (user?.role === "super_admin" && !activeCompany?.id) {
     return <Navigate to="/super-admin" replace />;
+  }
+
+  if (isCooperativeFund && standardOnlyPaths.includes(location.pathname)) {
+    return <Navigate to="/fondos" replace />;
+  }
+
+  if (!isCooperativeFund && location.pathname.startsWith(cooperativeOnlyPrefix)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
@@ -34,10 +61,10 @@ export function AppShell() {
         <aside className="bg-hero px-6 py-8 text-white">
           <div className="mb-10">
             <p className="text-xs uppercase tracking-[0.3em] text-brand-100/80">
-              {isSupportMode ? "Soporte RubDev" : "Retiro Emaus"}
+              {isSupportMode ? "Soporte RubDev" : productLabel}
             </p>
             <h1 className="mt-3 text-2xl font-semibold">{activeCompany?.name}</h1>
-            <p className="mt-2 text-sm text-slate-300">{user?.role}</p>
+            <p className="mt-2 text-sm text-slate-300">{productLabel}</p>
           </div>
 
           <nav className="space-y-2">
@@ -45,8 +72,9 @@ export function AppShell() {
               .filter((item) => !item.roles || item.roles.includes(user?.role))
               .map((item) => (
                 <NavLink
-                  key={item.to}
+                  key={item.key}
                   to={item.to}
+                  end={item.to === defaultPath}
                   className={({ isActive }) =>
                     `block rounded-2xl px-4 py-3 text-sm transition ${
                       isActive
@@ -84,7 +112,7 @@ export function AppShell() {
               <div>
                 <p className="text-sm text-slate-500">Panel administrativo y financiero</p>
                 <h2 className="text-xl font-semibold text-slate-950">
-                  Recaudo, gastos y fondos especializados por empresa
+                  {headerTitle}
                 </h2>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">

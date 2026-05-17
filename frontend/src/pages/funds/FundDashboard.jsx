@@ -50,22 +50,22 @@ export function FundDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Nueva linea de negocio"
-        title="Dashboard de fondos"
-        description="Arquitectura base para cooperativas, capital rotativo, prestamos internos e inversion colectiva."
+        eyebrow="Fondo solidario rotativo"
+        title="Dashboard fondo"
+        description="Indicadores reales de capital, aportes, cupos, mora y caja disponible."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Capital recaudado" value={data?.cards?.capitalRecaudado ?? 0} accent="bg-brand-500" />
-        <StatCard label="Cartera activa" value={data?.cards?.carteraActiva ?? 0} accent="bg-sky-500" />
-        <StatCard label="Intereses generados" value={data?.cards?.interesesGenerados ?? 0} accent="bg-emerald-500" />
+        <StatCard label="Aportes del mes" value={data?.cards?.aportesDelMes ?? 0} accent="bg-sky-500" />
+        <StatCard label="Cartera pendiente" value={data?.cards?.carteraPendiente ?? 0} accent="bg-amber-500" />
         <StatCard label="Caja disponible" value={data?.cards?.cajaDisponible ?? 0} accent="bg-slate-900" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Valor cupo" value={data?.cards?.valorCupo ?? 0} accent="bg-cyan-500" />
-        <StatCard label="Rendimiento anual" value={data?.cards?.rendimientoAnual ?? 0} accent="bg-teal-500" formatter={percent} />
-        <StatCard label="Proyeccion cierre" value={data?.cards?.proyeccionCierre ?? 0} accent="bg-amber-500" />
+        <StatCard label="Miembros activos" value={data?.cards?.miembrosActivos ?? 0} accent="bg-cyan-500" formatter={integer} />
+        <StatCard label="Total cupos" value={data?.cards?.totalCupos ?? 0} accent="bg-teal-500" formatter={integer} />
+        <StatCard label="Ciclos activos" value={data?.cards?.ciclosActivos ?? 0} accent="bg-violet-500" formatter={integer} />
         <StatCard label="Mora y multas" value={data?.cards?.mora ?? 0} accent="bg-rose-500" />
       </div>
 

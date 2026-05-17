@@ -1,80 +1,154 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
-import { getFundMembers } from "../../services/fund.service.js";
+import { getFundMembers, saveFundMember, updateFundMemberStatus } from "../../services/fund.service.js";
+import { queryClient } from "../../services/queryClient.js";
+import { getApiErrorMessage } from "../../utils/api.js";
 import { currency } from "../../utils/format.js";
+
+const emptyMember = {
+  full_name: "",
+  document_number: "",
+  phone: "",
+  email: "",
+  address: "",
+  status: "active",
+  notes: ""
+};
 
 export function FundMembersPage() {
   const { activeCompany } = useActiveCompany();
+  const [form, setForm] = useState(emptyMember);
+  const [editing, setEditing] = useState(null);
 
   const membersQuery = useQuery({
     queryKey: ["fund-members", activeCompany?.id],
     queryFn: () => getFundMembers(activeCompany?.id)
   });
 
+  useEffect(() => {
+    if (!editing) return;
+    setForm({
+      full_name: editing.full_name || "",
+      document_number: editing.document_number || "",
+      phone: editing.phone || "",
+      email: editing.email || "",
+      address: editing.address || "",
+      status: editing.status || "active",
+      notes: editing.notes || ""
+    });
+  }, [editing]);
+
+  const mutation = useMutation({
+    mutationFn: (payload) => saveFundMember(payload, editing?.id),
+    onSuccess: async () => {
+      toast.success(editing ? "Miembro actualizado" : "Miembro creado");
+      setEditing(null);
+      setForm(emptyMember);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["fund-members"] }),
+        queryClient.invalidateQueries({ queryKey: ["fund-overview"] })
+      ]);
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "No fue posible guardar el miembro"))
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updateFundMemberStatus(id, { company_id: activeCompany?.id, status }),
+    onSuccess: async () => {
+      toast.success("Estado actualizado");
+      await queryClient.invalidateQueries({ queryKey: ["fund-members"] });
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "No fue posible actualizar el estado"))
+  });
+
+  function submit(event) {
+    event.preventDefault();
+    mutation.mutate({ ...form, company_id: activeCompany?.id });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setForm(emptyMember);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Fondos"
-        title="Miembros y cupos"
-        description="Estructura base para participantes del fondo, cupos y aportes mensuales."
+        eyebrow="Fondo solidario"
+        title="Miembros del fondo"
+        description="Crea, edita, activa e inactiva los miembros del fondo sin tocar participantes del modelo standard."
       />
 
-      <section className="panel-soft p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-950">Miembros del fondo</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Los cupos se mantienen separados de los participantes Emaus actuales.
-            </p>
+      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+        <form className="panel-soft p-6" onSubmit={submit}>
+          <h3 className="text-lg font-semibold text-slate-950">{editing ? "Editar miembro" : "Nuevo miembro"}</h3>
+          <div className="mt-5 grid gap-4">
+            <input className="input-light" value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} placeholder="Nombre completo" required />
+            <input className="input-light" value={form.document_number} onChange={(event) => setForm({ ...form, document_number: event.target.value })} placeholder="Documento" required />
+            <input className="input-light" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="Telefono" />
+            <input className="input-light" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Correo" />
+            <input className="input-light" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} placeholder="Direccion" />
+            <select className="input-light" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+            </select>
+            <textarea className="input-light" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder="Notas" rows="3" />
           </div>
-          <span className="status-badge">Cupos proporcionales</span>
-        </div>
+          <div className="mt-5 flex gap-3">
+            <button className="btn-primary" type="submit" disabled={mutation.isPending}>{editing ? "Guardar cambios" : "Crear miembro"}</button>
+            {editing ? <button className="btn-secondary" type="button" onClick={cancelEdit}>Cancelar</button> : null}
+          </div>
+        </form>
 
-        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100">
-          <table className="min-w-full divide-y divide-slate-100 text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.16em] text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Miembro</th>
-                <th className="px-4 py-3">Documento</th>
-                <th className="px-4 py-3">Cupos activos</th>
-                <th className="px-4 py-3">Aporte mensual</th>
-                <th className="px-4 py-3">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {(membersQuery.data ?? []).map((member) => (
-                <tr key={member.id}>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-950">{member.full_name}</p>
-                    <p className="text-xs text-slate-500">{member.member_code || "Sin codigo"}</p>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {member.document_number || "No registrado"}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {Number(member.active_shares ?? 0).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {currency(member.monthly_contribution ?? 0)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="status-badge">{member.status}</span>
-                  </td>
-                </tr>
-              ))}
-              {!membersQuery.isLoading && (membersQuery.data ?? []).length === 0 ? (
+        <section className="panel-soft p-6">
+          <h3 className="text-lg font-semibold text-slate-950">Miembros registrados</h3>
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100">
+            <table className="min-w-full divide-y divide-slate-100 text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.16em] text-slate-500">
                 <tr>
-                  <td className="px-4 py-6 text-center text-slate-500" colSpan="5">
-                    Aun no hay miembros registrados en el fondo.
-                  </td>
+                  <th className="px-4 py-3">Miembro</th>
+                  <th className="px-4 py-3">Cupos</th>
+                  <th className="px-4 py-3">Mensual</th>
+                  <th className="px-4 py-3">Estado</th>
+                  <th className="px-4 py-3">Acciones</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {(membersQuery.data ?? []).map((member) => (
+                  <tr key={member.id}>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-slate-950">{member.full_name}</p>
+                      <p className="text-xs text-slate-500">{member.document_number} | {member.phone || "Sin telefono"}</p>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{Number(member.quota_count ?? 0)}</td>
+                    <td className="px-4 py-3 text-slate-600">{currency(member.monthly_payment ?? 0)}</td>
+                    <td className="px-4 py-3"><span className={member.status === "active" ? "status-badge status-ok" : "status-badge"}>{member.status}</span></td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button className="btn-secondary" type="button" onClick={() => setEditing(member)}>Editar</button>
+                        <button
+                          className="btn-secondary"
+                          type="button"
+                          onClick={() => statusMutation.mutate({ id: member.id, status: member.status === "active" ? "inactive" : "active" })}
+                        >
+                          {member.status === "active" ? "Inactivar" : "Activar"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {!membersQuery.isLoading && (membersQuery.data ?? []).length === 0 ? (
+                  <tr><td className="px-4 py-6 text-center text-slate-500" colSpan="5">Aun no hay miembros registrados.</td></tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

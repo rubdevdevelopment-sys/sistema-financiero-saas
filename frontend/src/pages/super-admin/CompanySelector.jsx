@@ -26,7 +26,7 @@ export function CompanySelector() {
     });
     enterCompanySupport(company, reason);
     toast.success(`Soporte activo para ${company.name}`);
-    navigate("/dashboard");
+    navigate(company.business_model === "cooperative_fund" ? "/fondos" : "/dashboard");
   }
 
   return (
