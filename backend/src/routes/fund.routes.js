@@ -1,17 +1,22 @@
 import { Router } from "express";
 import {
   createFundCycleAction,
+  approveFundLoanAction,
+  createFundLoanAction,
   createFundMemberAction,
   createFundPenaltyAction,
   createFundQuotaAction,
   generateFundContributionsAction,
   getFundContributionsAction,
   getFundCyclesAction,
+  getFundLoanInstallmentsAction,
+  getFundLoansAction,
   getFundMembersAction,
   getFundOverviewAction,
   getFundPenaltiesAction,
   getFundQuotasAction,
   registerFundContributionPaymentAction,
+  registerFundLoanInstallmentPaymentAction,
   updateFundCycleAction,
   updateFundMemberAction,
   updateFundMemberStatusAction,
@@ -21,6 +26,8 @@ import { authorize } from "../middlewares/authorize.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import {
   createFundCycleSchema,
+  approveFundLoanSchema,
+  createFundLoanSchema,
   createFundMemberSchema,
   createFundPenaltySchema,
   createFundQuotaSchema,
@@ -28,6 +35,7 @@ import {
   generateExtraordinaryContributionSchema,
   generateContributionsSchema,
   registerContributionPaymentSchema,
+  registerLoanInstallmentPaymentSchema,
   updateFundCycleSchema,
   updateFundMemberSchema,
   updateFundMemberStatusSchema,
@@ -113,4 +121,25 @@ fundRouter.post(
   authorize("super_admin", "admin", "operator"),
   validate(createFundPenaltySchema),
   asyncHandler(createFundPenaltyAction)
+);
+
+fundRouter.get("/loans", validate(fundQuerySchema), asyncHandler(getFundLoansAction));
+fundRouter.post(
+  "/loans",
+  authorize("super_admin", "admin", "operator"),
+  validate(createFundLoanSchema),
+  asyncHandler(createFundLoanAction)
+);
+fundRouter.put(
+  "/loans/:id/approve",
+  authorize("super_admin", "admin", "operator"),
+  validate(approveFundLoanSchema),
+  asyncHandler(approveFundLoanAction)
+);
+fundRouter.get("/loan-installments", validate(fundQuerySchema), asyncHandler(getFundLoanInstallmentsAction));
+fundRouter.put(
+  "/loan-installments/:id/payment",
+  authorize("super_admin", "admin", "operator"),
+  validate(registerLoanInstallmentPaymentSchema),
+  asyncHandler(registerFundLoanInstallmentPaymentAction)
 );

@@ -74,6 +74,13 @@ export function FundDashboard() {
         <StatCard label="Total cupos" value={data?.cards?.totalCupos ?? 0} accent="bg-violet-500" formatter={integer} />
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Cartera activa prestamos" value={data?.cards?.carteraActivaPrestamos ?? 0} accent="bg-brand-500" />
+        <StatCard label="Intereses prestamos" value={data?.cards?.interesesPrestamos ?? 0} accent="bg-emerald-500" />
+        <StatCard label="Saldo prestamos" value={data?.cards?.saldoPendientePrestamos ?? 0} accent="bg-amber-500" />
+        <StatCard label="Prestamos vencidos" value={data?.cards?.prestamosVencidos ?? 0} accent="bg-rose-500" formatter={integer} />
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="panel-soft p-6">
           <h3 className="text-lg font-semibold text-slate-950">Estructura modular</h3>

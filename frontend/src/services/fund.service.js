@@ -97,3 +97,35 @@ export async function saveFundPenalty(payload) {
   const response = await api.post("/funds/penalties", payload);
   return response.data.data;
 }
+
+export async function getFundLoans(companyId) {
+  const response = await api.get("/funds/loans", {
+    params: companyParams(companyId)
+  });
+  return response.data.data;
+}
+
+export async function saveFundLoan(payload) {
+  const response = await api.post("/funds/loans", payload);
+  return response.data.data;
+}
+
+export async function approveFundLoan(id, payload) {
+  const response = await api.put(`/funds/loans/${id}/approve`, payload);
+  return response.data.data;
+}
+
+export async function getFundLoanInstallments(companyId, loanId) {
+  const response = await api.get("/funds/loan-installments", {
+    params: {
+      ...companyParams(companyId),
+      loan_id: loanId || undefined
+    }
+  });
+  return response.data.data;
+}
+
+export async function registerFundLoanInstallmentPayment(id, payload) {
+  const response = await api.put(`/funds/loan-installments/${id}/payment`, payload);
+  return response.data.data;
+}

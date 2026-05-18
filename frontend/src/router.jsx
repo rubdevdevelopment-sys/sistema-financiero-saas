@@ -15,6 +15,7 @@ const FundDashboard = lazy(() => import("./pages/funds/FundDashboard.jsx"));
 const FundCyclesPage = lazy(() => import("./pages/funds/FundCyclesPage.jsx"));
 const FundMembersPage = lazy(() => import("./pages/funds/FundMembersPage.jsx"));
 const FundQuotasPage = lazy(() => import("./pages/funds/FundQuotasPage.jsx"));
+const FundLoansPage = lazy(() => import("./pages/funds/FundLoansPage.jsx"));
 const FundPenaltiesPage = lazy(() => import("./pages/funds/FundPenaltiesPage.jsx"));
 const FundModulePage = lazy(() => import("./pages/funds/FundModulePage.jsx"));
 const CompaniesPage = lazy(() => import("./pages/admin/CompaniesPage.jsx"));
@@ -119,7 +120,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "fondos/prestamos",
-            element: withSuspense(<FundModulePage type="loans" />)
+            element: withSuspense(<FundLoansPage />)
           },
           {
             path: "fondos/multas",

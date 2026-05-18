@@ -20,6 +20,7 @@ const querySchema = z.object({
   company_id: z.string().uuid().optional(),
   search: z.string().trim().optional(),
   cycle_id: z.string().uuid().optional(),
+  loan_id: z.string().uuid().optional(),
   member_id: z.string().uuid().optional(),
   status: z.string().trim().optional(),
   contribution_type: z.enum(["ordinary", "extraordinary", "penalty"]).optional(),
@@ -162,5 +163,43 @@ export const createFundPenaltySchema = z.object({
     status: z.enum(["pending", "paid", "waived"]).default("pending")
   }),
   params: z.object({}).optional(),
+  query: z.object({}).optional()
+});
+
+const loanBody = z.object({
+  company_id: z.string().uuid().optional(),
+  member_id: z.string().uuid(),
+  cycle_id: z.string().uuid(),
+  principal_amount: z.coerce.number().positive(),
+  interest_rate: z.coerce.number().min(0).default(0),
+  installment_count: z.coerce.number().int().positive(),
+  first_due_date: z.string().trim().min(10),
+  status: z.enum(["draft", "approved"]).default("draft"),
+  notes: nullableString
+});
+
+export const createFundLoanSchema = z.object({
+  body: loanBody,
+  params: z.object({}).optional(),
+  query: z.object({}).optional()
+});
+
+export const approveFundLoanSchema = z.object({
+  body: z.object({
+    company_id: z.string().uuid().optional(),
+    first_due_date: z.string().trim().min(10).optional()
+  }),
+  params: idParams,
+  query: z.object({}).optional()
+});
+
+export const registerLoanInstallmentPaymentSchema = z.object({
+  body: z.object({
+    paid_amount: z.coerce.number().min(0),
+    payment_date: z.string().trim().min(10).optional().nullable(),
+    payment_method: nullableString,
+    notes: nullableString
+  }),
+  params: idParams,
   query: z.object({}).optional()
 });

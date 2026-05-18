@@ -2,16 +2,21 @@ import { sendSuccess } from "../utils/response.js";
 import {
   createFundCycle,
   createFundMember,
+  createFundLoan,
   createFundPenalty,
   createFundQuota,
   generateFundContributions,
   getFundOverview,
+  approveFundLoan,
+  listFundLoanInstallments,
   listFundContributions,
   listFundCycles,
   listFundMembers,
+  listFundLoans,
   listFundPenalties,
   listFundQuotas,
   registerFundContributionPayment,
+  registerFundLoanInstallmentPayment,
   updateFundCycle,
   updateFundMember,
   updateFundMemberStatus,
@@ -100,4 +105,33 @@ export async function getFundPenaltiesAction(req, res) {
 export async function createFundPenaltyAction(req, res) {
   const penalty = await createFundPenalty(req.validated.body, req.user);
   return sendSuccess(res, penalty, "Multa registrada", 201);
+}
+
+export async function getFundLoansAction(req, res) {
+  const loans = await listFundLoans(req.user, req.validated.query);
+  return sendSuccess(res, loans, "Prestamos obtenidos");
+}
+
+export async function createFundLoanAction(req, res) {
+  const loan = await createFundLoan(req.validated.body, req.user);
+  return sendSuccess(res, loan, "Prestamo creado", 201);
+}
+
+export async function approveFundLoanAction(req, res) {
+  const loan = await approveFundLoan(req.validated.params.id, req.validated.body, req.user);
+  return sendSuccess(res, loan, "Prestamo aprobado");
+}
+
+export async function getFundLoanInstallmentsAction(req, res) {
+  const installments = await listFundLoanInstallments(req.user, req.validated.query);
+  return sendSuccess(res, installments, "Cuotas de prestamo obtenidas");
+}
+
+export async function registerFundLoanInstallmentPaymentAction(req, res) {
+  const installment = await registerFundLoanInstallmentPayment(
+    req.validated.params.id,
+    req.validated.body,
+    req.user
+  );
+  return sendSuccess(res, installment, "Pago de prestamo registrado");
 }

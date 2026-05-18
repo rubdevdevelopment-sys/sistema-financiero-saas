@@ -74,6 +74,64 @@ async function refreshOverdueContributions(companyId) {
   );
 }
 
+async function refreshOverdueLoans(companyId) {
+  await query(
+    `
+      update fund_loan_installments
+      set status = 'overdue',
+          updated_at = now()
+      where company_id = $1
+        and deleted_at is null
+        and status = 'pending'
+        and pending_amount > 0
+        and due_date < current_date
+    `,
+    [companyId]
+  );
+
+  await query(
+    `
+      update fund_loans l
+      set status = 'overdue',
+          updated_at = now()
+      where l.company_id = $1
+        and l.deleted_at is null
+        and l.status in ('approved', 'active')
+        and exists (
+          select 1
+          from fund_loan_installments i
+          where i.loan_id = l.id
+            and i.deleted_at is null
+            and i.status = 'overdue'
+        )
+    `,
+    [companyId]
+  );
+}
+
+function addMonths(dateValue, months) {
+  const date = new Date(dateValue);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
+function calculateLoanTerms(data) {
+  const principal = number(data.principal_amount);
+  const interestRate = number(data.interest_rate);
+  const totalInterest = principal * (interestRate / 100);
+  const totalAmount = principal + totalInterest;
+  const installmentCount = Number(data.installment_count);
+  const installmentValue = Math.round((totalAmount / installmentCount) * 100) / 100;
+
+  return {
+    principal,
+    interestRate,
+    totalAmount,
+    installmentCount,
+    installmentValue
+  };
+}
+
 async function getCycle(id, requestUser) {
   const { rows } = await query(`select * from fund_cycles where id = $1 limit 1`, [id]);
   const cycle = rows[0];
@@ -265,8 +323,9 @@ async function generateOrdinaryContributionsForQuota(quota) {
 export async function getFundOverview(requestUser, filters = {}) {
   const companyId = resolveCompanyId(filters, requestUser);
   await refreshOverdueContributions(companyId);
+  await refreshOverdueLoans(companyId);
 
-  const [companyResult, cardsResult, cycleResult, memberResult, quotaResult, contributionResult, penaltyResult, memberStatusResult] =
+  const [companyResult, cardsResult, cycleResult, memberResult, quotaResult, contributionResult, penaltyResult, memberStatusResult, loanResult] =
     await Promise.all([
       query(`select id, name, slug, business_model from companies where id = $1 limit 1`, [companyId]),
       query(
@@ -304,6 +363,19 @@ export async function getFundOverview(requestUser, filters = {}) {
           where m.company_id = $1 and m.deleted_at is null and m.status = 'active'
         `,
         [companyId]
+      ),
+      query(
+        `
+          select
+            coalesce(sum(outstanding_balance) filter (where status in ('approved', 'active', 'overdue')), 0) as active_portfolio,
+            coalesce(sum(total_amount - principal_amount), 0) as generated_interest,
+            coalesce(sum(outstanding_balance), 0) as loan_pending_balance,
+            count(*) filter (where status in ('approved', 'active', 'overdue'))::int as active_loans,
+            count(*) filter (where status = 'overdue')::int as overdue_loans
+          from fund_loans
+          where company_id = $1 and deleted_at is null
+        `,
+        [companyId]
       )
     ]);
 
@@ -328,8 +400,12 @@ export async function getFundOverview(requestUser, filters = {}) {
       totalCupos: number(quotaResult.rows[0]?.total_quotas),
       mora: number(contributionResult.rows[0]?.overdue_amount) + number(penalties.pending_penalties),
       cajaDisponible: number(cards.available_cash),
+      carteraActivaPrestamos: number(loanResult.rows[0]?.active_portfolio),
+      interesesPrestamos: number(loanResult.rows[0]?.generated_interest),
+      saldoPendientePrestamos: number(loanResult.rows[0]?.loan_pending_balance),
+      prestamosVencidos: number(loanResult.rows[0]?.overdue_loans),
       ciclosActivos: number(cycleResult.rows[0]?.active_cycles),
-      prestamosActivos: 0,
+      prestamosActivos: number(loanResult.rows[0]?.active_loans),
       rendimientoAnual: 0,
       valorCupo: 0,
       proyeccionCierre: number(cards.capital_total)
@@ -821,4 +897,239 @@ export async function createFundPenalty(data, requestUser) {
   );
 
   return rows[0];
+}
+
+async function getLoan(id, requestUser) {
+  const { rows } = await query(`select * from fund_loans where id = $1 limit 1`, [id]);
+  const loan = rows[0];
+
+  if (!loan || loan.deleted_at) throw new ApiError(404, "Prestamo no encontrado");
+  if (requestUser.role !== "super_admin" && loan.company_id !== requestUser.companyId) {
+    throw new ApiError(403, "No puedes acceder a prestamos de otra empresa");
+  }
+
+  return loan;
+}
+
+async function recalculateLoanBalance(loanId) {
+  const totals = await query(
+    `
+      select
+        coalesce(sum(pending_amount), 0) as pending,
+        count(*) filter (where status = 'overdue')::int as overdue_count,
+        count(*) filter (where status <> 'paid')::int as open_count
+      from fund_loan_installments
+      where loan_id = $1 and deleted_at is null
+    `,
+    [loanId]
+  );
+
+  const pending = number(totals.rows[0]?.pending);
+  const overdueCount = number(totals.rows[0]?.overdue_count);
+  const openCount = number(totals.rows[0]?.open_count);
+  const status = pending <= 0 ? "paid" : overdueCount > 0 ? "overdue" : openCount > 0 ? "active" : "approved";
+
+  const { rows } = await query(
+    `
+      update fund_loans
+      set outstanding_balance = $2,
+          status = $3,
+          updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [loanId, pending, status]
+  );
+
+  return rows[0];
+}
+
+async function generateLoanInstallments(loan, firstDueDate) {
+  for (let index = 0; index < Number(loan.installment_count); index += 1) {
+    const dueDate = addMonths(firstDueDate, index);
+    await query(
+      `
+        insert into fund_loan_installments (
+          company_id, loan_id, member_id, cycle_id, installment_number,
+          due_date, expected_amount, paid_amount, pending_amount, status
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, 0, $7,
+                case when $6::date < current_date then 'overdue' else 'pending' end)
+        on conflict (loan_id, installment_number)
+        do update set due_date = excluded.due_date,
+                      expected_amount = excluded.expected_amount,
+                      pending_amount = greatest(excluded.expected_amount - fund_loan_installments.paid_amount, 0),
+                      status = case
+                        when fund_loan_installments.paid_amount >= excluded.expected_amount then 'paid'
+                        when fund_loan_installments.paid_amount > 0 then 'partial'
+                        when excluded.due_date < current_date then 'overdue'
+                        else 'pending'
+                      end,
+                      updated_at = now()
+      `,
+      [
+        loan.company_id,
+        loan.id,
+        loan.member_id,
+        loan.cycle_id,
+        index + 1,
+        dueDate,
+        number(loan.installment_value)
+      ]
+    );
+  }
+}
+
+export async function listFundLoans(requestUser, filters = {}) {
+  const companyId = resolveCompanyId(filters, requestUser);
+  await refreshOverdueLoans(companyId);
+
+  const { rows } = await query(
+    `
+      select l.*, m.full_name as member_name, c.name as cycle_name
+      from fund_loans l
+      join fund_members m on m.id = l.member_id
+      join fund_cycles c on c.id = l.cycle_id
+      where l.company_id = $1 and l.deleted_at is null
+      order by l.created_at desc
+    `,
+    [companyId]
+  );
+
+  return rows.map((item) => ({
+    ...item,
+    principal_amount: number(item.principal_amount),
+    interest_rate: number(item.interest_rate),
+    total_amount: number(item.total_amount),
+    installment_value: number(item.installment_value),
+    outstanding_balance: number(item.outstanding_balance)
+  }));
+}
+
+export async function createFundLoan(data, requestUser) {
+  const companyId = resolveCompanyId(data, requestUser);
+  const member = await getMember(data.member_id, requestUser);
+  const cycle = await getCycle(data.cycle_id, requestUser);
+
+  if (member.company_id !== companyId || cycle.company_id !== companyId) {
+    throw new ApiError(400, "Miembro y ciclo deben pertenecer a la empresa seleccionada");
+  }
+
+  const terms = calculateLoanTerms(data);
+  const status = data.status === "approved" ? "approved" : "draft";
+
+  const { rows } = await query(
+    `
+      insert into fund_loans (
+        company_id, member_id, cycle_id, principal_amount, interest_rate,
+        total_amount, installment_count, installment_value, outstanding_balance,
+        status, approved_at, notes
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $6, $9,
+              case when $9 = 'approved' then now() else null end, $10)
+      returning *
+    `,
+    [
+      companyId,
+      data.member_id,
+      data.cycle_id,
+      terms.principal,
+      terms.interestRate,
+      terms.totalAmount,
+      terms.installmentCount,
+      terms.installmentValue,
+      status,
+      data.notes ?? null
+    ]
+  );
+
+  if (status === "approved") {
+    await generateLoanInstallments(rows[0], data.first_due_date);
+    return recalculateLoanBalance(rows[0].id);
+  }
+
+  return rows[0];
+}
+
+export async function approveFundLoan(id, data, requestUser) {
+  const loan = await getLoan(id, requestUser);
+  const firstDueDate = data.first_due_date || new Date().toISOString().slice(0, 10);
+
+  const { rows } = await query(
+    `
+      update fund_loans
+      set status = 'approved',
+          approved_at = coalesce(approved_at, now()),
+          outstanding_balance = total_amount,
+          updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [loan.id]
+  );
+
+  await generateLoanInstallments(rows[0], firstDueDate);
+  return recalculateLoanBalance(rows[0].id);
+}
+
+export async function listFundLoanInstallments(requestUser, filters = {}) {
+  const companyId = resolveCompanyId(filters, requestUser);
+  await refreshOverdueLoans(companyId);
+  const params = [companyId];
+  const where = ["i.company_id = $1", "i.deleted_at is null"];
+
+  if (filters.loan_id) {
+    params.push(filters.loan_id);
+    where.push(`i.loan_id = $${params.length}`);
+  }
+
+  const { rows } = await query(
+    `
+      select i.*, l.principal_amount, m.full_name as member_name
+      from fund_loan_installments i
+      join fund_loans l on l.id = i.loan_id
+      join fund_members m on m.id = i.member_id
+      where ${where.join(" and ")}
+      order by i.due_date asc, i.installment_number asc
+    `,
+    params
+  );
+
+  return rows.map((item) => ({
+    ...item,
+    expected_amount: number(item.expected_amount),
+    paid_amount: number(item.paid_amount),
+    pending_amount: number(item.pending_amount)
+  }));
+}
+
+export async function registerFundLoanInstallmentPayment(id, data, requestUser) {
+  const { rows } = await query(`select * from fund_loan_installments where id = $1 limit 1`, [id]);
+  const installment = rows[0];
+
+  if (!installment || installment.deleted_at) throw new ApiError(404, "Cuota de prestamo no encontrada");
+  if (requestUser.role !== "super_admin" && installment.company_id !== requestUser.companyId) {
+    throw new ApiError(403, "No puedes registrar pagos de otra empresa");
+  }
+
+  const paid = data.paid_amount;
+  const { pending, status } = contributionStatus(number(installment.expected_amount), paid, installment.due_date);
+  const result = await query(
+    `
+      update fund_loan_installments
+      set paid_amount = $2,
+          pending_amount = $3,
+          status = $4,
+          payment_date = $5,
+          payment_method = $6,
+          notes = $7,
+          updated_at = now()
+      where id = $1
+      returning *
+    `,
+    [id, paid, pending, status, data.payment_date || null, data.payment_method ?? null, data.notes ?? null]
+  );
+
+  await recalculateLoanBalance(installment.loan_id);
+  return result.rows[0];
 }
