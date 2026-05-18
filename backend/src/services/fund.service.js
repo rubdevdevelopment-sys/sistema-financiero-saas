@@ -118,15 +118,20 @@ function addMonths(dateValue, months) {
 function calculateLoanTerms(data) {
   const principal = number(data.principal_amount);
   const interestRate = number(data.interest_rate);
-  const totalInterest = principal * (interestRate / 100);
-  const totalAmount = principal + totalInterest;
   const installmentCount = Number(data.installment_count);
-  const installmentValue = Math.round((totalAmount / installmentCount) * 100) / 100;
+  const monthlyInterestAmount = Math.round(principal * (interestRate / 100) * 100) / 100;
+  const totalInterest = Math.round(monthlyInterestAmount * installmentCount * 100) / 100;
+  const totalPayable = Math.round((principal + totalInterest) * 100) / 100;
+  const installmentValue = installmentCount === 1
+    ? totalPayable
+    : monthlyInterestAmount;
 
   return {
     principal,
     interestRate,
-    totalAmount,
+    monthlyInterestAmount,
+    totalInterest,
+    totalPayable,
     installmentCount,
     installmentValue
   };
@@ -367,13 +372,35 @@ export async function getFundOverview(requestUser, filters = {}) {
       query(
         `
           select
-            coalesce(sum(outstanding_balance) filter (where status in ('approved', 'active', 'overdue')), 0) as active_portfolio,
-            coalesce(sum(total_amount - principal_amount), 0) as generated_interest,
-            coalesce(sum(outstanding_balance), 0) as loan_pending_balance,
-            count(*) filter (where status in ('approved', 'active', 'overdue'))::int as active_loans,
-            count(*) filter (where status = 'overdue')::int as overdue_loans
-          from fund_loans
-          where company_id = $1 and deleted_at is null
+            coalesce(sum(l.outstanding_balance) filter (where l.status in ('approved', 'active', 'overdue')), 0) as active_portfolio,
+            coalesce(sum(l.principal_amount) filter (where l.status in ('approved', 'active', 'overdue')), 0) as loan_principal,
+            coalesce(sum(l.total_interest), 0) as generated_interest,
+            coalesce(sum(i.pending_interest), 0) as pending_interest,
+            coalesce(sum(i.paid_amount), 0) as loan_collected,
+            coalesce(sum(l.outstanding_balance), 0) as loan_pending_balance,
+            count(*) filter (where l.status in ('approved', 'active', 'overdue'))::int as active_loans,
+            count(*) filter (where l.status = 'overdue')::int as overdue_loans
+          from fund_loans l
+          left join (
+            select
+              i.loan_id,
+              sum(i.paid_amount) as paid_amount,
+              sum(
+                case
+                  when i.installment_type = 'interest_only' then i.pending_amount
+                  when i.installment_type = 'final_settlement' then greatest(
+                    (i.expected_amount - fl.principal_amount) - i.paid_amount,
+                    0
+                  )
+                  else 0
+                end
+              ) as pending_interest
+            from fund_loan_installments i
+            join fund_loans fl on fl.id = i.loan_id
+            where i.company_id = $1 and i.deleted_at is null
+            group by i.loan_id
+          ) i on i.loan_id = l.id
+          where l.company_id = $1 and l.deleted_at is null
         `,
         [companyId]
       )
@@ -401,7 +428,10 @@ export async function getFundOverview(requestUser, filters = {}) {
       mora: number(contributionResult.rows[0]?.overdue_amount) + number(penalties.pending_penalties),
       cajaDisponible: number(cards.available_cash),
       carteraActivaPrestamos: number(loanResult.rows[0]?.active_portfolio),
+      capitalPrestado: number(loanResult.rows[0]?.loan_principal),
       interesesPrestamos: number(loanResult.rows[0]?.generated_interest),
+      interesesPendientesPrestamos: number(loanResult.rows[0]?.pending_interest),
+      recaudoPrestamos: number(loanResult.rows[0]?.loan_collected),
       saldoPendientePrestamos: number(loanResult.rows[0]?.loan_pending_balance),
       prestamosVencidos: number(loanResult.rows[0]?.overdue_loans),
       ciclosActivos: number(cycleResult.rows[0]?.active_cycles),
@@ -947,16 +977,27 @@ async function recalculateLoanBalance(loanId) {
 async function generateLoanInstallments(loan, firstDueDate) {
   for (let index = 0; index < Number(loan.installment_count); index += 1) {
     const dueDate = addMonths(firstDueDate, index);
+    const installmentNumber = index + 1;
+    const isFinalInstallment = installmentNumber === Number(loan.installment_count);
+    const installmentType = isFinalInstallment ? "final_settlement" : "interest_only";
+    const expectedAmount = isFinalInstallment
+      ? number(loan.principal_amount) + number(loan.monthly_interest_amount)
+      : number(loan.monthly_interest_amount);
+
     await query(
       `
         insert into fund_loan_installments (
           company_id, loan_id, member_id, cycle_id, installment_number,
-          due_date, expected_amount, paid_amount, pending_amount, status
+          installment_type, due_date, expected_amount, paid_amount, pending_amount, status
         )
-        values ($1, $2, $3, $4, $5, $6, $7, 0, $7,
-                case when $6::date < current_date then 'overdue' else 'pending' end)
+        values (
+          $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::integer,
+          $6::varchar, $7::date, $8::numeric, 0::numeric, $8::numeric,
+          case when $7::date < current_date then 'overdue' else 'pending' end
+        )
         on conflict (loan_id, installment_number)
         do update set due_date = excluded.due_date,
+                      installment_type = excluded.installment_type,
                       expected_amount = excluded.expected_amount,
                       pending_amount = greatest(excluded.expected_amount - fund_loan_installments.paid_amount, 0),
                       status = case
@@ -972,9 +1013,10 @@ async function generateLoanInstallments(loan, firstDueDate) {
         loan.id,
         loan.member_id,
         loan.cycle_id,
-        index + 1,
+        installmentNumber,
+        installmentType,
         dueDate,
-        number(loan.installment_value)
+        expectedAmount
       ]
     );
   }
@@ -986,10 +1028,34 @@ export async function listFundLoans(requestUser, filters = {}) {
 
   const { rows } = await query(
     `
-      select l.*, m.full_name as member_name, c.name as cycle_name
+      select
+        l.*,
+        m.full_name as member_name,
+        c.name as cycle_name,
+        coalesce(i.paid_amount, 0) as paid_amount,
+        coalesce(i.pending_interest, 0) as pending_interest
       from fund_loans l
       join fund_members m on m.id = l.member_id
       join fund_cycles c on c.id = l.cycle_id
+      left join (
+        select
+          i.loan_id,
+          sum(i.paid_amount) as paid_amount,
+          sum(
+            case
+              when i.installment_type = 'interest_only' then i.pending_amount
+              when i.installment_type = 'final_settlement' then greatest(
+                (i.expected_amount - fl.principal_amount) - i.paid_amount,
+                0
+              )
+              else 0
+            end
+          ) as pending_interest
+        from fund_loan_installments i
+        join fund_loans fl on fl.id = i.loan_id
+        where i.company_id = $1 and i.deleted_at is null
+        group by i.loan_id
+      ) i on i.loan_id = l.id
       where l.company_id = $1 and l.deleted_at is null
       order by l.created_at desc
     `,
@@ -1000,9 +1066,14 @@ export async function listFundLoans(requestUser, filters = {}) {
     ...item,
     principal_amount: number(item.principal_amount),
     interest_rate: number(item.interest_rate),
+    monthly_interest_amount: number(item.monthly_interest_amount),
+    total_interest: number(item.total_interest),
+    total_payable: number(item.total_payable),
     total_amount: number(item.total_amount),
     installment_value: number(item.installment_value),
-    outstanding_balance: number(item.outstanding_balance)
+    outstanding_balance: number(item.outstanding_balance),
+    paid_amount: number(item.paid_amount),
+    pending_interest: number(item.pending_interest)
   }));
 }
 
@@ -1022,11 +1093,18 @@ export async function createFundLoan(data, requestUser) {
     `
       insert into fund_loans (
         company_id, member_id, cycle_id, principal_amount, interest_rate,
-        total_amount, installment_count, installment_value, outstanding_balance,
+        monthly_interest_amount, total_interest, total_payable, total_amount,
+        installment_count, installment_value, outstanding_balance,
         status, approved_at, notes
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $6, $9,
-              case when $9 = 'approved' then now() else null end, $10)
+      values (
+        $1::uuid, $2::uuid, $3::uuid, $4::numeric, $5::numeric,
+        $6::numeric, $7::numeric, $8::numeric, $8::numeric,
+        $9::integer, $10::numeric, $8::numeric,
+        $11::varchar,
+        case when $11::varchar = 'approved' then now() else null::timestamptz end,
+        $12::text
+      )
       returning *
     `,
     [
@@ -1035,7 +1113,9 @@ export async function createFundLoan(data, requestUser) {
       data.cycle_id,
       terms.principal,
       terms.interestRate,
-      terms.totalAmount,
+      terms.monthlyInterestAmount,
+      terms.totalInterest,
+      terms.totalPayable,
       terms.installmentCount,
       terms.installmentValue,
       status,
@@ -1060,7 +1140,7 @@ export async function approveFundLoan(id, data, requestUser) {
       update fund_loans
       set status = 'approved',
           approved_at = coalesce(approved_at, now()),
-          outstanding_balance = total_amount,
+          outstanding_balance = total_payable,
           updated_at = now()
       where id = $1
       returning *
