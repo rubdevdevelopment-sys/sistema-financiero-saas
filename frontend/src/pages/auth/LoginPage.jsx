@@ -12,8 +12,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [form, setForm] = useState({
-    email: "superadmin@demo.local",
-    password: "Admin123*"
+    email: "",
+    password: ""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
