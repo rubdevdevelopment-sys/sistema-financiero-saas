@@ -11,16 +11,64 @@ const emptyCompany = {
   phone: "",
   currency: "COP",
   timezone: "America/Bogota",
+  business_model: "standard",
   valor_objetivo_emaus: 460000,
   active: true,
   public_dashboard_enabled: false,
   public_slug: ""
 };
 
+const businessModelOptions = [
+  {
+    value: "standard",
+    label: "Gestion administrativa y recaudo",
+    description: "Operacion SaaS tradicional para recaudo, ingresos, egresos y control administrativo."
+  },
+  {
+    value: "cooperative_fund",
+    label: "Fondo solidario rotativo",
+    description: "Modelo para cupos, aportes mensuales, capital colectivo y reparto proporcional."
+  },
+  {
+    value: "investment_fund",
+    label: "Fondo de inversion",
+    description: "Estructura preparada para capital privado, rendimientos y distribuciones."
+  },
+  {
+    value: "rotating_capital",
+    label: "Capital rotativo",
+    description: "Gestion base para ciclos de capital, cartera activa y rotacion de recursos."
+  },
+  {
+    value: "lending_group",
+    label: "Grupo de prestamos",
+    description: "Modelo orientado a prestamos internos, cuotas, mora y multas."
+  }
+];
+
+const visibleBusinessModelOptions = businessModelOptions.filter((option) =>
+  ["standard", "cooperative_fund"].includes(option.value)
+);
+
+function normalizeCompanySlug(value) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getBusinessModelOption(value) {
+  return businessModelOptions.find((option) => option.value === value) ?? businessModelOptions[0];
+}
+
 export function CompaniesPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyCompany);
+  const [editing, setEditing] = useState(null);
 
   useEffect(() => {
     if (user?.role === "super_admin") {
@@ -35,10 +83,59 @@ export function CompaniesPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    await api.post("/companies", form);
+
+    const payload = {
+      name: form.name.trim(),
+      nit: form.nit.trim() || null,
+      email: form.email.trim() || null,
+      phone: form.phone.trim() || null,
+      currency: form.currency || "COP",
+      timezone: form.timezone || "America/Bogota",
+      business_model: form.business_model || "standard",
+      valor_objetivo_emaus: Number(form.valor_objetivo_emaus) || 0,
+      active: Boolean(form.active),
+      public_dashboard_enabled: Boolean(form.public_dashboard_enabled),
+      public_slug: form.public_dashboard_enabled ? normalizeCompanySlug(form.public_slug) : null
+    };
+
+    if (editing) {
+      await api.put(`/companies/${editing.id}`, payload);
+    } else {
+      await api.post("/companies", {
+        ...payload,
+        slug: normalizeCompanySlug(form.slug)
+      });
+    }
+
     setForm(emptyCompany);
+    setEditing(null);
     await loadCompanies();
   }
+
+  function startEdit(company) {
+    setEditing(company);
+    setForm({
+      name: company.name || "",
+      slug: company.slug || "",
+      nit: company.nit || "",
+      email: company.email || "",
+      phone: company.phone || "",
+      currency: company.currency || "COP",
+      timezone: company.timezone || "America/Bogota",
+      business_model: company.business_model || "standard",
+      valor_objetivo_emaus: company.valor_objetivo_emaus ?? 460000,
+      active: Boolean(company.active),
+      public_dashboard_enabled: Boolean(company.public_dashboard_enabled),
+      public_slug: company.public_slug || ""
+    });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setForm(emptyCompany);
+  }
+
+  const selectedBusinessModel = getBusinessModelOption(form.business_model);
 
   if (user?.role !== "super_admin") {
     return (
@@ -58,7 +155,10 @@ export function CompaniesPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <form className="panel-soft p-6" onSubmit={handleSubmit}>
-          <h3 className="text-lg font-semibold text-slate-950">Nueva empresa</h3>
+          <h3 className="text-lg font-semibold text-slate-950">
+            {editing ? "Editar empresa" : "Nueva empresa"}
+          </h3>
+
           <div className="mt-5 grid gap-4">
             {[
               ["name", "Nombre de empresa"],
@@ -75,22 +175,30 @@ export function CompaniesPage() {
                 type={key === "valor_objetivo_emaus" ? "number" : "text"}
                 placeholder={label}
                 value={form[key]}
-                disabled={key === "public_slug" && !form.public_dashboard_enabled}
+                disabled={(editing && key === "slug") || (key === "public_slug" && !form.public_dashboard_enabled)}
                 onChange={(event) =>
                   setForm({
                     ...form,
-                    [key]: key === "public_slug" || key === "slug"
-                      ? event.target.value.toLowerCase().replace(/\s+/g, "-")
-                      : event.target.value
+                    [key]:
+                      key === "public_slug" || key === "slug"
+                        ? event.target.value.toLowerCase().replace(/\s+/g, "-")
+                        : event.target.value
                   })
                 }
-                required={key === "name" || key === "slug" || (key === "public_slug" && form.public_dashboard_enabled)}
+                required={
+                  key === "name" ||
+                  (!editing && key === "slug") ||
+                  (key === "public_slug" && form.public_dashboard_enabled)
+                }
               />
             ))}
+
             <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
               <span>
                 <span className="block font-semibold text-slate-900">Portal publico informativo</span>
-                <span className="block text-xs text-slate-500">Crea la empresa con el portal publico opcional.</span>
+                <span className="block text-xs text-slate-500">
+                  Habilita una vista publica de solo lectura para esta empresa.
+                </span>
               </span>
               <input
                 type="checkbox"
@@ -105,9 +213,57 @@ export function CompaniesPage() {
                 }
               />
             </label>
-            <button className="btn-primary" type="submit">
-              Crear empresa
-            </button>
+
+            <div className="rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
+              <label className="text-sm font-semibold text-slate-950" htmlFor="company-business-model">
+                Modelo de negocio
+              </label>
+              <p className="mt-1 text-sm text-slate-600">
+                Define la linea operativa principal de la empresa sin mezclarla con los modulos financieros actuales.
+              </p>
+              <select
+                id="company-business-model"
+                className="input-light mt-4 bg-white"
+                value={form.business_model}
+                onChange={(event) => setForm({ ...form, business_model: event.target.value })}
+              >
+                {visibleBusinessModelOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-3 rounded-xl border border-brand-100 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-brand-700">{selectedBusinessModel.value}</p>
+                <p className="mt-1 text-sm text-slate-600">{selectedBusinessModel.description}</p>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={form.active}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    active: event.target.checked
+                  })
+                }
+              />
+              Empresa activa
+            </label>
+
+            <div className="flex gap-3">
+              <button className="btn-primary" type="submit">
+                {editing ? "Guardar cambios" : "Crear empresa"}
+              </button>
+
+              {editing ? (
+                <button className="btn-secondary" type="button" onClick={cancelEdit}>
+                  Cancelar
+                </button>
+              ) : null}
+            </div>
           </div>
         </form>
 
@@ -125,12 +281,20 @@ export function CompaniesPage() {
                     {row.active ? "Activa" : "Inactiva"}
                   </span>
                 </div>
+
                 <div className="mt-4 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
                   <p>Usuarios: {row.users_count}</p>
                   <p>Modulos activos: {row.active_modules}</p>
+                  <p>Modelo: {getBusinessModelOption(row.business_model).label}</p>
                   <p>Meta Emaus: {row.valor_objetivo_emaus}</p>
                   <p>Portal publico: {row.public_dashboard_enabled ? "Activo" : "Inactivo"}</p>
                   <p>Slug publico: {row.public_slug || "-"}</p>
+                </div>
+
+                <div className="mt-4">
+                  <button className="btn-secondary" type="button" onClick={() => startEdit(row)}>
+                    Editar
+                  </button>
                 </div>
               </div>
             ))}

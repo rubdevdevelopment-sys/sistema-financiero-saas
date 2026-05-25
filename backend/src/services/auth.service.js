@@ -8,7 +8,8 @@ export async function loginUser({ email, password }) {
   const { rows } = await query(
     `
       select u.id, u.company_id, u.full_name, u.email, u.password_hash, u.role, u.active,
-             c.name as company_name, c.slug as company_slug, c.active as company_active
+             c.name as company_name, c.slug as company_slug, c.business_model,
+             c.active as company_active
       from app_users u
       join companies c on c.id = u.company_id
       where lower(u.email) = lower($1)
@@ -49,7 +50,8 @@ export async function loginUser({ email, password }) {
       email: user.email,
       role: user.role,
       company_name: user.company_name,
-      company_slug: user.company_slug
+      company_slug: user.company_slug,
+      business_model: user.business_model
     }
   };
 }

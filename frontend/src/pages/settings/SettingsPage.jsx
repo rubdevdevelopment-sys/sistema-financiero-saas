@@ -5,20 +5,25 @@ import toast from "react-hot-toast";
 import { api } from "../../services/api.js";
 import { queryClient } from "../../services/queryClient.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { getApiErrorMessage } from "../../utils/api.js";
 import { currency } from "../../utils/format.js";
 
 export function SettingsPage() {
   const { user } = useAuth();
+  const { activeCompany } = useActiveCompany();
   const canEdit = ["super_admin", "admin"].includes(user?.role);
 
   const companyQuery = useQuery({
-    queryKey: ["company-current"],
+    queryKey: ["company-current", activeCompany?.id],
     queryFn: async () => {
-      const response = await api.get("/companies/current");
+      const response = await api.get("/companies/current", {
+        params: activeCompany?.id ? { company_id: activeCompany.id } : undefined
+      });
       return response.data.data;
-    }
+    },
+    enabled: user?.role !== "super_admin" || Boolean(activeCompany?.id)
   });
 
   const form = useForm({
@@ -46,7 +51,10 @@ export function SettingsPage() {
   }, [companyQuery.data, form]);
 
   const mutation = useMutation({
-    mutationFn: (payload) => api.put("/companies/current", payload),
+    mutationFn: (payload) =>
+      api.put("/companies/current", payload, {
+        params: activeCompany?.id ? { company_id: activeCompany.id } : undefined
+      }),
     onSuccess: async () => {
       toast.success("Configuracion actualizada");
       await queryClient.invalidateQueries({ queryKey: ["company-current"] });

@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { ActiveCompanyProvider } from "../../context/ActiveCompanyContext.jsx";
 
 export function ProtectedRoute() {
   const { isAuthenticated, loading } = useAuth();
@@ -17,5 +18,9 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  return (
+    <ActiveCompanyProvider>
+      <Outlet />
+    </ActiveCompanyProvider>
+  );
 }

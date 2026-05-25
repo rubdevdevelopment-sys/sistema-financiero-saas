@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { api } from "../../services/api.js";
 import { queryClient } from "../../services/queryClient.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { FinanceForm } from "../../components/common/FinanceForm.jsx";
 import { DataTable } from "../../components/common/DataTable.jsx";
@@ -22,8 +23,32 @@ const initialFilters = {
   date_to: ""
 };
 
+function emptyToNull(value) {
+  return value === "" || value === undefined
+    ? null
+    : value;
+}
+
+function normalizeExpensePayload(values) {
+  return {
+    category_id: values.category_id,
+    title: values.title?.trim(),
+    description: emptyToNull(values.description?.trim()),
+    amount: Number(values.amount),
+    movement_date: values.movement_date,
+    payment_method: values.payment_method?.trim(),
+    status: values.status || "completed",
+    attachment_url: emptyToNull(values.attachment_url?.trim()),
+    notes: emptyToNull(values.notes?.trim()),
+    responsible: emptyToNull(values.responsible?.trim()),
+    authorized_by: emptyToNull(values.authorized_by?.trim()),
+    receipt_reference: emptyToNull(values.receipt_reference?.trim())
+  };
+}
+
 export function ExpensesPage() {
   const { user } = useAuth();
+  const { activeCompany } = useActiveCompany();
   const [filters, setFilters] = useState(initialFilters);
   const deferredSearch = useDeferredValue(filters.search);
   const [editing, setEditing] = useState(null);
@@ -35,63 +60,165 @@ export function ExpensesPage() {
     () => ({
       page,
       page_size: 10,
+      company_id: activeCompany?.id,
       search: deferredSearch || undefined,
       status: filters.status || undefined,
       category_id: filters.category_id || undefined,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined
     }),
-    [deferredSearch, filters, page]
+    [activeCompany?.id, deferredSearch, filters, page]
   );
 
-const categoryOptionsQuery = useQuery({
-  queryKey: ["category-options", "expense"],
+  const categoryOptionsQuery = useQuery({
+    queryKey: ["category-options", "expense", activeCompany?.id],
 
-  queryFn: async () => {
-
-    const response = await api.get("/categories", {
-      params: {
-        type: "expense",
-        active: "true",
-        page: 1,
-        page_size: 100
-      }
-    });
-
-    console.log("EXPENSE CATEGORY OPTIONS", response.data);
-
-    return response.data.data.items || [];
-  }
-});
-
-  const categoriesQuery = useQuery({
-    queryKey: ["categories", "expense", categoryPage],
     queryFn: async () => {
+
       const response = await api.get("/categories", {
-        params: { type: "expense", page: categoryPage, page_size: 8 }
+        params: {
+          type: "expense",
+          company_id: activeCompany?.id,
+          active: "true",
+          page: 1,
+          page_size: 100
+        }
       });
-      return response.data.data;
+
+      return (
+        response.data?.data?.items ||
+        response.data?.items ||
+        []
+      );
     }
   });
 
-queryFn: async () => {
-
-  const response = await api.get("/expenses", {
-    params: filters
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "expense", activeCompany?.id, categoryPage],
+    queryFn: async () => {
+      const response = await api.get("/categories", {
+        params: { type: "expense", company_id: activeCompany?.id, page: categoryPage, page_size: 8 }
+      });
+      return (
+        response.data?.data || {
+          items: [],
+          pagination: {}
+        }
+      );
+    }
   });
 
-  console.log("EXPENSES RESPONSE", response.data);
+  const expensesQuery = useQuery({
+    queryKey: [
+      "expenses",
+      activeCompany?.id,
+      movementParams
+    ],
 
-  return response.data.data;
-}
+    queryFn: async () => {
+      const response = await api.get("/expenses", {
+        params: movementParams
+      });
+
+      return (
+        response.data?.data || {
+          items: [],
+          pagination: {},
+          totals: {}
+        }
+      );
+    }
+  });
 
   const categoryOptions = categoryOptionsQuery.data ?? [];
   const totals = expensesQuery.data?.totals;
 
+  const columns = [
+    {
+      header: "Concepto",
+      accessorKey: "title"
+    },
+    {
+      header: "Categoria",
+      cell: ({ row }) =>
+        row.original.category?.name ||
+        row.original.category_name ||
+        "-"
+    },
+    {
+      header: "Responsable",
+      cell: ({ row }) =>
+        row.original.responsible ||
+        row.original.authorized_by ||
+        "-"
+    },
+    {
+      header: "Monto",
+      cell: ({ row }) =>
+        new Intl.NumberFormat("es-CO", {
+          style: "currency",
+          currency: "COP",
+          minimumFractionDigits: 0
+        }).format(row.original.amount || 0)
+    },
+    {
+      header: "Estado",
+      cell: ({ row }) => {
+        const status = row.original.status;
+
+        return (
+          <span>
+            {status === "completed"
+              ? "Completado"
+              : status === "pending"
+              ? "Pendiente"
+              : "Cancelado"}
+          </span>
+        );
+      }
+    },
+    {
+      header: "Fecha",
+      cell: ({ row }) => row.original.movement_date
+    },
+    {
+      header: "Acciones",
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              setEditing(row.original);
+              setModalOpen(true);
+            }}
+          >
+            Editar
+          </button>
+
+          <button
+            className="btn-danger"
+            onClick={async () => {
+              const confirmed = window.confirm(
+                `Se eliminara el gasto "${row.original.title}". Deseas continuar?`
+              );
+
+              if (!confirmed) return;
+
+              await deleteMutation.mutateAsync(row.original.id);
+            }}
+          >
+            Eliminar
+          </button>
+        </div>
+      )
+    }
+  ];
+
   const movementMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
-      if (id) return api.put(`/expenses/${id}`, payload);
-      return api.post("/expenses", payload);
+      const scopedPayload = { ...payload, company_id: activeCompany?.id || user.company_id };
+      if (id) return api.put(`/expenses/${id}`, scopedPayload);
+      return api.post("/expenses", scopedPayload);
     },
     onSuccess: async () => {
       toast.success(editing ? "Gasto actualizado" : "Gasto registrado");
@@ -123,8 +250,9 @@ queryFn: async () => {
 
   const categoryMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
-      if (id) return api.put(`/categories/${id}`, payload);
-      return api.post("/categories", { ...payload, company_id: user.company_id });
+      const scopedPayload = { ...payload, company_id: activeCompany?.id || user.company_id };
+      if (id) return api.put(`/categories/${id}`, scopedPayload);
+      return api.post("/categories", scopedPayload);
     },
     onSuccess: async (_, variables) => {
       toast.success(variables.id ? "Categoria actualizada" : "Categoria creada");
@@ -208,17 +336,8 @@ queryFn: async () => {
       ) : null}
 
       <DataTable
-        rows={expensesQuery.data?.items ?? []}
-        onEdit={(row) => {
-          setEditing(row);
-          setModalOpen(true);
-        }}
-        onDelete={async (row) => {
-          const confirmed = window.confirm(`Se eliminara el gasto "${row.title}". Deseas continuar?`);
-          if (!confirmed) return;
-          await deleteMutation.mutateAsync(row.id);
-        }}
-        showResponsible
+        columns={columns}
+        data={expensesQuery.data?.items ?? []}
         variant="expense"
         pagination={expensesQuery.data?.pagination}
         onPageChange={setPage}
@@ -255,10 +374,10 @@ queryFn: async () => {
           categories={categoryOptions}
           mode="expense"
           initialData={editing}
-          onSubmit={(payload) =>
+          onSubmit={(values) =>
             movementMutation.mutateAsync({
               id: editing?.id,
-              payload
+              payload: normalizeExpensePayload(values)
             })
           }
         />

@@ -57,12 +57,13 @@ export async function createCompany(data) {
         phone,
         currency,
         timezone,
+        business_model,
         valor_objetivo_emaus,
         active,
         public_dashboard_enabled,
         public_slug
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       returning *
     `,
     [
@@ -73,6 +74,7 @@ export async function createCompany(data) {
       data.phone ?? null,
       data.currency,
       data.timezone,
+      data.business_model,
       data.valor_objetivo_emaus,
       data.active,
       data.public_dashboard_enabled ?? false,
@@ -83,6 +85,10 @@ export async function createCompany(data) {
   const company = rows[0];
 
   const modules = ["dashboard", "participants", "incomes", "expenses", "admin"];
+  if (data.business_model !== "standard") {
+    modules.push("cooperative_fund");
+  }
+
   for (const moduleKey of modules) {
     await query(
       `
@@ -97,7 +103,28 @@ export async function createCompany(data) {
 }
 
 export async function updateCompany(id, data) {
-  await ensurePublicSlugAvailable(data.public_slug ?? null, id);
+  const currentResult = await query(
+    `
+      select *
+      from companies
+      where id = $1
+      limit 1
+    `,
+    [id]
+  );
+
+  const current = currentResult.rows[0];
+
+  if (!current) {
+    throw new ApiError(404, "Empresa no encontrada");
+  }
+
+  const nextPublicSlug =
+    data.public_slug !== undefined
+      ? data.public_slug
+      : current.public_slug;
+
+  await ensurePublicSlugAvailable(nextPublicSlug ?? null, id);
 
   const { rows } = await query(
     `
@@ -108,37 +135,58 @@ export async function updateCompany(id, data) {
           phone = $5,
           currency = $6,
           timezone = $7,
-          valor_objetivo_emaus = $8,
-          active = $9,
-          public_dashboard_enabled = $10,
-          public_slug = $11,
+          business_model = $8,
+          valor_objetivo_emaus = $9,
+          active = $10,
+          public_dashboard_enabled = $11,
+          public_slug = $12,
           updated_at = now()
       where id = $1
       returning *
     `,
     [
       id,
-      data.name,
-      data.nit ?? null,
-      data.email ?? null,
-      data.phone ?? null,
-      data.currency,
-      data.timezone,
-      data.valor_objetivo_emaus,
-      data.active,
-      data.public_dashboard_enabled ?? false,
-      data.public_slug ?? null
+      data.name ?? current.name,
+      data.nit !== undefined ? data.nit : current.nit,
+      data.email !== undefined ? data.email : current.email,
+      data.phone !== undefined ? data.phone : current.phone,
+      data.currency ?? current.currency,
+      data.timezone ?? current.timezone,
+      data.business_model ?? current.business_model,
+      data.valor_objetivo_emaus ?? current.valor_objetivo_emaus,
+      data.active ?? current.active,
+      data.public_dashboard_enabled ?? current.public_dashboard_enabled,
+      nextPublicSlug ?? null
     ]
   );
 
-  if (!rows[0]) {
-    throw new ApiError(404, "Empresa no encontrada");
+  const company = rows[0];
+
+  if (company.business_model !== "standard") {
+    await query(
+      `
+        insert into company_modules (company_id, module_key, enabled)
+        values ($1, 'cooperative_fund', true)
+        on conflict (company_id, module_key)
+        do update set enabled = true
+      `,
+      [company.id]
+    );
   }
 
-  return rows[0];
+  return company;
 }
 
-export async function getCurrentCompany(requestUser) {
+export async function getCurrentCompany(requestUser, filters = {}) {
+  const companyId =
+    requestUser.role === "super_admin" && filters.company_id
+      ? filters.company_id
+      : requestUser.companyId;
+
+  if (requestUser.role === "super_admin" && !filters.company_id) {
+    throw new ApiError(400, "Selecciona una empresa para ver su configuracion");
+  }
+
   const { rows } = await query(
     `
       select *
@@ -146,7 +194,7 @@ export async function getCurrentCompany(requestUser) {
       where id = $1
       limit 1
     `,
-    [requestUser.companyId]
+    [companyId]
   );
 
   if (!rows[0]) {
@@ -156,8 +204,8 @@ export async function getCurrentCompany(requestUser) {
   return rows[0];
 }
 
-export async function updateCurrentCompany(requestUser, data) {
-  const current = await getCurrentCompany(requestUser);
+export async function updateCurrentCompany(requestUser, data, filters = {}) {
+  const current = await getCurrentCompany(requestUser, filters);
   const nextPublicSlug =
     data.public_slug !== undefined
       ? data.public_slug
@@ -181,8 +229,8 @@ export async function updateCurrentCompany(requestUser, data) {
     [
       current.id,
       data.name ?? current.name,
-      data.phone ?? current.phone,
-      data.email ?? current.email,
+      data.phone !== undefined ? data.phone : current.phone,
+      data.email !== undefined ? data.email : current.email,
       data.valor_objetivo_emaus ?? current.valor_objetivo_emaus,
       data.public_dashboard_enabled ?? current.public_dashboard_enabled,
       nextPublicSlug ?? null

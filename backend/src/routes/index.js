@@ -10,6 +10,8 @@ import { expenseRouter } from "./expense.routes.js";
 import { dashboardRouter } from "./dashboard.routes.js";
 import { participantRouter } from "./participant.routes.js";
 import { publicRouter } from "./public.routes.js";
+import { superAdminRouter } from "./superAdmin.routes.js";
+import { fundRouter } from "./fund.routes.js";
 
 export const router = Router();
 
@@ -17,6 +19,7 @@ router.use("/health", healthRouter);
 router.use("/auth", authRouter);
 router.use("/public", publicRouter);
 router.use(authMiddleware);
+router.use("/super-admin", superAdminRouter);
 router.use("/companies", companyRouter);
 router.use("/users", userRouter);
 router.use("/categories", categoryRouter);
@@ -24,3 +27,4 @@ router.use("/participants", participantRouter);
 router.use("/incomes", incomeRouter);
 router.use("/expenses", expenseRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/funds", fundRouter);

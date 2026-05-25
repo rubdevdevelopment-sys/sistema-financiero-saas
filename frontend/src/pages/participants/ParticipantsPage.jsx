@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { api } from "../../services/api.js";
 import { queryClient } from "../../services/queryClient.js";
+import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { Modal } from "../../components/common/Modal.jsx";
 import { ParticipantForm } from "../../components/common/ParticipantForm.jsx";
@@ -19,6 +20,7 @@ const initialFilters = {
 };
 
 export function ParticipantsPage() {
+  const { activeCompany } = useActiveCompany();
   const [filters, setFilters] = useState(initialFilters);
   const deferredSearch = useDeferredValue(filters.search);
   const [page, setPage] = useState(1);
@@ -31,17 +33,20 @@ export function ParticipantsPage() {
     () => ({
       page,
       page_size: 10,
+      company_id: activeCompany?.id,
       search: deferredSearch || undefined,
       payment_status: filters.payment_status || undefined,
       active: filters.active || undefined
     }),
-    [deferredSearch, filters.active, filters.payment_status, page]
+    [activeCompany?.id, deferredSearch, filters.active, filters.payment_status, page]
   );
 
   const companyQuery = useQuery({
-    queryKey: ["company-current"],
+    queryKey: ["company-current", activeCompany?.id],
     queryFn: async () => {
-      const response = await api.get("/companies/current");
+      const response = await api.get("/companies/current", {
+        params: activeCompany?.id ? { company_id: activeCompany.id } : undefined
+      });
       return response.data.data;
     }
   });
@@ -65,8 +70,9 @@ export function ParticipantsPage() {
 
   const participantMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
-      if (id) return api.put(`/participants/${id}`, payload);
-      return api.post("/participants", payload);
+      const scopedPayload = { ...payload, company_id: activeCompany?.id };
+      if (id) return api.put(`/participants/${id}`, scopedPayload);
+      return api.post("/participants", scopedPayload);
     },
     onSuccess: async () => {
       toast.success(editing ? "Participante actualizado" : "Participante creado");

@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-export const createFinanceSchema = z.object({
+const emptyToNull = (value) =>
+  value === "" ? null : value;
+
+const nullableText = z.preprocess(
+  emptyToNull,
+  z.string().trim().nullable().optional()
+);
+
+const financeBodySchema = z.object({
   category_id: z.string().uuid("Selecciona una categoria valida"),
 
   income_type: z
@@ -14,21 +22,20 @@ export const createFinanceSchema = z.object({
     .optional(),
 
   participant_id: z
-    .string()
-    .uuid("Selecciona un participante valido")
-    .nullable()
-    .optional(),
+    .preprocess(
+      emptyToNull,
+      z.string()
+        .uuid("Selecciona un participante valido")
+        .nullable()
+        .optional()
+    ),
 
   title: z
     .string()
     .trim()
     .min(3, "El titulo debe tener al menos 3 caracteres"),
 
-  description: z
-    .string()
-    .trim()
-    .nullable()
-    .optional(),
+  description: nullableText,
 
   amount: z.coerce
     .number()
@@ -49,57 +56,36 @@ export const createFinanceSchema = z.object({
     "cancelled"
   ]),
 
-  installment_number: z.coerce
-    .number()
-    .int()
-    .min(1, "La cuota debe ser mayor a 0")
-    .nullable()
-    .optional(),
+  installment_number: z.preprocess(
+    emptyToNull,
+    z.coerce
+      .number()
+      .int()
+      .min(1, "La cuota debe ser mayor a 0")
+      .nullable()
+      .optional()
+  ),
 
   receipt_number: z
-    .string()
-    .trim()
-    .max(80)
-    .nullable()
-    .optional(),
+    .preprocess(
+      emptyToNull,
+      z.string().trim().max(80).nullable().optional()
+    ),
 
-  attachment_url: z
-    .string()
-    .trim()
-    .nullable()
-    .optional(),
+  attachment_url: nullableText,
 
-  notes: z
-    .string()
-    .trim()
-    .nullable()
-    .optional(),
+  notes: nullableText,
 
-  responsible: z
-    .string()
-    .trim()
-    .nullable()
-    .optional(),
+  responsible: nullableText,
 
-  authorized_by: z
-    .string()
-    .trim()
-    .nullable()
-    .optional(),
+  authorized_by: nullableText,
 
-  receipt_reference: z
-    .string()
-    .trim()
-    .nullable()
-    .optional()
+  receipt_reference: nullableText
 
 }).superRefine((value, ctx) => {
 
-  const incomeType =
-    value.income_type ?? "participant_payment";
-
   if (
-    incomeType === "participant_payment" &&
+    value.income_type === "participant_payment" &&
     !value.participant_id
   ) {
     ctx.addIssue({
@@ -111,12 +97,28 @@ export const createFinanceSchema = z.object({
   }
 });
 
-export const financeSchema = createFinanceSchema;
+export const createFinanceSchema = z.object({
+  body: financeBodySchema,
+  params: z.object({}).optional(),
+  query: z.object({}).optional()
+});
 
-export const updateFinanceSchema = createFinanceSchema;
+export const financeSchema = financeBodySchema;
+
+export const updateFinanceSchema = z.object({
+  body: financeBodySchema,
+  params: z.object({
+    id: z.string().uuid("ID invalido")
+  }),
+  query: z.object({}).optional()
+});
 
 export const financeParamsSchema = z.object({
-  id: z.string().uuid("ID invalido")
+  body: z.object({}).optional(),
+  params: z.object({
+    id: z.string().uuid("ID invalido")
+  }),
+  query: z.object({}).optional()
 });
 
 export const financeFilterSchema =

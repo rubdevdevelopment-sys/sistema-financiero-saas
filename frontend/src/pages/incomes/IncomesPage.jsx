@@ -6,6 +6,7 @@ import { api } from "../../services/api.js";
 import { queryClient } from "../../services/queryClient.js";
 
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
 
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { FinanceForm } from "../../components/common/FinanceForm.jsx";
@@ -26,8 +27,45 @@ const initialFilters = {
   date_to: ""
 };
 
+function emptyToNull(value) {
+  return value === "" || value === undefined
+    ? null
+    : value;
+}
+
+function normalizeIncomePayload(values) {
+  const incomeType =
+    values.income_type || "participant_payment";
+  const isParticipantPayment =
+    incomeType === "participant_payment";
+
+  return {
+    income_type: incomeType,
+    category_id: values.category_id,
+    participant_id: isParticipantPayment
+      ? emptyToNull(values.participant_id)
+      : null,
+    title: values.title?.trim(),
+    description: emptyToNull(values.description?.trim()),
+    amount: Number(values.amount),
+    movement_date: values.movement_date,
+    payment_method: values.payment_method?.trim(),
+    status: values.status || "completed",
+    installment_number:
+      isParticipantPayment &&
+      values.installment_number !== ""
+        ? Number(values.installment_number)
+        : null,
+    receipt_number: emptyToNull(values.receipt_number?.trim()),
+    responsible: emptyToNull(values.responsible?.trim()),
+    attachment_url: emptyToNull(values.attachment_url?.trim()),
+    notes: emptyToNull(values.notes?.trim())
+  };
+}
+
 export function IncomesPage() {
   const { user } = useAuth();
+  const { activeCompany } = useActiveCompany();
 
   const [filters, setFilters] = useState(initialFilters);
 
@@ -45,22 +83,24 @@ export function IncomesPage() {
     () => ({
       page,
       page_size: 10,
+      company_id: activeCompany?.id,
       search: deferredSearch || undefined,
       status: filters.status || undefined,
       category_id: filters.category_id || undefined,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined
     }),
-    [deferredSearch, filters, page]
+    [activeCompany?.id, deferredSearch, filters, page]
   );
 
   const categoryOptionsQuery = useQuery({
-    queryKey: ["category-options", "income"],
+    queryKey: ["category-options", "income", activeCompany?.id],
 
     queryFn: async () => {
       const response = await api.get("/categories", {
         params: {
           type: "income",
+          company_id: activeCompany?.id,
           active: "true",
           page: 1,
           page_size: 100
@@ -79,6 +119,7 @@ export function IncomesPage() {
     queryKey: [
       "categories",
       "income",
+      activeCompany?.id,
       categoryPage
     ],
 
@@ -86,6 +127,7 @@ export function IncomesPage() {
       const response = await api.get("/categories", {
         params: {
           type: "income",
+          company_id: activeCompany?.id,
           page: categoryPage,
           page_size: 8
         }
@@ -103,6 +145,7 @@ export function IncomesPage() {
   const incomesQuery = useQuery({
     queryKey: [
       "incomes",
+      activeCompany?.id,
       movementParams
     ],
 
@@ -122,10 +165,11 @@ export function IncomesPage() {
   });
 
   const participantsQuery = useQuery({
-  queryKey: ["participants-options"],
+  queryKey: ["participants-options", activeCompany?.id],
   queryFn: async () => {
     const response = await api.get("/participants", {
       params: {
+        company_id: activeCompany?.id,
         page: 1,
         page_size: 100
       }
@@ -144,8 +188,6 @@ const participants =
   participantsQuery.data || [];
 
 
-  console.log(incomesQuery.data);
-
 const incomes = incomesQuery.data?.items || [];
 
   const categoryOptions =
@@ -155,20 +197,18 @@ const incomes = incomesQuery.data?.items || [];
 
   const movementMutation = useMutation({
    mutationFn: async ({ id, payload }) => {
-
-  console.log("PAYLOAD RECIBIDO:");
-  console.log(payload);
+  const scopedPayload = { ...payload, company_id: activeCompany?.id || user.company_id };
 
   if (id) {
     return api.put(
       `/incomes/${id}`,
-      payload
+      scopedPayload
     );
   }
 
   return api.post(
     "/incomes",
-    payload
+    scopedPayload
   );
 },
 
@@ -195,10 +235,6 @@ const incomes = incomesQuery.data?.items || [];
     },
 
 onError: (error) => {
-
-  console.log("ERROR BACKEND:");
-  console.log(error.response?.data);
-
   toast.error(
     getApiErrorMessage(
       error,
@@ -336,7 +372,7 @@ const columns = [
 
       return api.post("/categories", {
         ...payload,
-        company_id: user.company_id
+        company_id: activeCompany?.id || user.company_id
       });
     },
 
@@ -591,37 +627,9 @@ pagination={
   mode="income"
   initialData={editing}
 onSubmit={async (values) => {
-
-  console.log("PAYLOAD RECIBIDO:");
-  console.log(values);
-
-  const normalizedPayload = {
-    ...values,
-
-    amount: Number(values.amount),
-
-    category_id:
-      values.category_id || null,
-
-    movement_date:
-      values.movement_date || null,
-
-    payment_method:
-      values.payment_method || null,
-
-    status:
-      values.status || null,
-
-    title:
-      values.title || null
-  };
-
-  console.log("NORMALIZED:");
-  console.log(normalizedPayload);
-
   await movementMutation.mutateAsync({
     id: editing?.id,
-    payload: normalizedPayload
+    payload: normalizeIncomePayload(values)
   });
 }}
 />

@@ -2,8 +2,12 @@ import { query } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
 function resolveCompanyId(data, requestUser) {
-  if (requestUser.role === "super_admin" && data?.company_id) {
-    return data.company_id;
+  if (requestUser.role === "super_admin") {
+    if (data?.company_id) {
+      return data.company_id;
+    }
+
+    throw new ApiError(400, "Selecciona una empresa para operar como soporte");
   }
 
   return requestUser.companyId;
