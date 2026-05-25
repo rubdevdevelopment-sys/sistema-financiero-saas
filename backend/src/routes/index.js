@@ -9,11 +9,13 @@ import { incomeRouter } from "./income.routes.js";
 import { expenseRouter } from "./expense.routes.js";
 import { dashboardRouter } from "./dashboard.routes.js";
 import { participantRouter } from "./participant.routes.js";
+import { publicRouter } from "./public.routes.js";
 
 export const router = Router();
 
 router.use("/health", healthRouter);
 router.use("/auth", authRouter);
+router.use("/public", publicRouter);
 router.use(authMiddleware);
 router.use("/companies", companyRouter);
 router.use("/users", userRouter);

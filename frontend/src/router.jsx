@@ -13,6 +13,7 @@ const CompaniesPage = lazy(() => import("./pages/admin/CompaniesPage.jsx"));
 const UsersPage = lazy(() => import("./pages/admin/UsersPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/settings/SettingsPage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
+const PublicCompanyDashboardPage = lazy(() => import("./pages/public/PublicCompanyDashboardPage.jsx"));
 
 function withSuspense(node) {
   return (
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: withSuspense(<LoginPage />)
+  },
+  {
+    path: "/public/:slug",
+    element: withSuspense(<PublicCompanyDashboardPage />)
   },
   {
     path: "/",

@@ -1,6 +1,32 @@
 import { query } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
+async function ensurePublicSlugAvailable(publicSlug, companyId = null) {
+  if (!publicSlug) {
+    return;
+  }
+
+  const values = [publicSlug];
+  let sql = `
+    select id
+    from companies
+    where public_slug = $1
+  `;
+
+  if (companyId) {
+    values.push(companyId);
+    sql += " and id <> $2";
+  }
+
+  sql += " limit 1";
+
+  const { rows } = await query(sql, values);
+
+  if (rows[0]) {
+    throw new ApiError(409, "El slug publico ya esta en uso por otra empresa");
+  }
+}
+
 export async function listCompanies() {
   const { rows } = await query(
     `
@@ -19,10 +45,24 @@ export async function listCompanies() {
 }
 
 export async function createCompany(data) {
+  await ensurePublicSlugAvailable(data.public_slug ?? null);
+
   const { rows } = await query(
     `
-      insert into companies (name, slug, nit, email, phone, currency, timezone, valor_objetivo_emaus, active)
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      insert into companies (
+        name,
+        slug,
+        nit,
+        email,
+        phone,
+        currency,
+        timezone,
+        valor_objetivo_emaus,
+        active,
+        public_dashboard_enabled,
+        public_slug
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       returning *
     `,
     [
@@ -34,7 +74,9 @@ export async function createCompany(data) {
       data.currency,
       data.timezone,
       data.valor_objetivo_emaus,
-      data.active
+      data.active,
+      data.public_dashboard_enabled ?? false,
+      data.public_slug ?? null
     ]
   );
 
@@ -55,6 +97,8 @@ export async function createCompany(data) {
 }
 
 export async function updateCompany(id, data) {
+  await ensurePublicSlugAvailable(data.public_slug ?? null, id);
+
   const { rows } = await query(
     `
       update companies
@@ -66,6 +110,8 @@ export async function updateCompany(id, data) {
           timezone = $7,
           valor_objetivo_emaus = $8,
           active = $9,
+          public_dashboard_enabled = $10,
+          public_slug = $11,
           updated_at = now()
       where id = $1
       returning *
@@ -79,7 +125,9 @@ export async function updateCompany(id, data) {
       data.currency,
       data.timezone,
       data.valor_objetivo_emaus,
-      data.active
+      data.active,
+      data.public_dashboard_enabled ?? false,
+      data.public_slug ?? null
     ]
   );
 
@@ -110,6 +158,12 @@ export async function getCurrentCompany(requestUser) {
 
 export async function updateCurrentCompany(requestUser, data) {
   const current = await getCurrentCompany(requestUser);
+  const nextPublicSlug =
+    data.public_slug !== undefined
+      ? data.public_slug
+      : current.public_slug;
+
+  await ensurePublicSlugAvailable(nextPublicSlug ?? null, current.id);
 
   const { rows } = await query(
     `
@@ -118,6 +172,8 @@ export async function updateCurrentCompany(requestUser, data) {
           phone = $3,
           email = $4,
           valor_objetivo_emaus = $5,
+          public_dashboard_enabled = $6,
+          public_slug = $7,
           updated_at = now()
       where id = $1
       returning *
@@ -127,7 +183,9 @@ export async function updateCurrentCompany(requestUser, data) {
       data.name ?? current.name,
       data.phone ?? current.phone,
       data.email ?? current.email,
-      data.valor_objetivo_emaus
+      data.valor_objetivo_emaus ?? current.valor_objetivo_emaus,
+      data.public_dashboard_enabled ?? current.public_dashboard_enabled,
+      nextPublicSlug ?? null
     ]
   );
 

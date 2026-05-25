@@ -12,7 +12,9 @@ const emptyCompany = {
   currency: "COP",
   timezone: "America/Bogota",
   valor_objetivo_emaus: 460000,
-  active: true
+  active: true,
+  public_dashboard_enabled: false,
+  public_slug: ""
 };
 
 export function CompaniesPage() {
@@ -64,7 +66,8 @@ export function CompaniesPage() {
               ["nit", "NIT"],
               ["email", "Correo"],
               ["phone", "Telefono"],
-              ["valor_objetivo_emaus", "Meta Emaus por participante"]
+              ["valor_objetivo_emaus", "Meta Emaus por participante"],
+              ["public_slug", "Slug portal publico"]
             ].map(([key, label]) => (
               <input
                 key={key}
@@ -72,10 +75,36 @@ export function CompaniesPage() {
                 type={key === "valor_objetivo_emaus" ? "number" : "text"}
                 placeholder={label}
                 value={form[key]}
-                onChange={(event) => setForm({ ...form, [key]: event.target.value })}
-                required={key === "name" || key === "slug"}
+                disabled={key === "public_slug" && !form.public_dashboard_enabled}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    [key]: key === "public_slug" || key === "slug"
+                      ? event.target.value.toLowerCase().replace(/\s+/g, "-")
+                      : event.target.value
+                  })
+                }
+                required={key === "name" || key === "slug" || (key === "public_slug" && form.public_dashboard_enabled)}
               />
             ))}
+            <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <span>
+                <span className="block font-semibold text-slate-900">Portal publico informativo</span>
+                <span className="block text-xs text-slate-500">Crea la empresa con el portal publico opcional.</span>
+              </span>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+                checked={form.public_dashboard_enabled}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    public_dashboard_enabled: event.target.checked,
+                    public_slug: event.target.checked ? form.public_slug : ""
+                  })
+                }
+              />
+            </label>
             <button className="btn-primary" type="submit">
               Crear empresa
             </button>
@@ -100,6 +129,8 @@ export function CompaniesPage() {
                   <p>Usuarios: {row.users_count}</p>
                   <p>Modulos activos: {row.active_modules}</p>
                   <p>Meta Emaus: {row.valor_objetivo_emaus}</p>
+                  <p>Portal publico: {row.public_dashboard_enabled ? "Activo" : "Inactivo"}</p>
+                  <p>Slug publico: {row.public_slug || "-"}</p>
                 </div>
               </div>
             ))}

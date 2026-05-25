@@ -26,7 +26,9 @@ export function SettingsPage() {
       name: "",
       phone: "",
       email: "",
-      valor_objetivo_emaus: 460000
+      valor_objetivo_emaus: 460000,
+      public_dashboard_enabled: false,
+      public_slug: ""
     }
   });
 
@@ -36,7 +38,9 @@ export function SettingsPage() {
         name: companyQuery.data.name ?? "",
         phone: companyQuery.data.phone ?? "",
         email: companyQuery.data.email ?? "",
-        valor_objetivo_emaus: companyQuery.data.valor_objetivo_emaus ?? 460000
+        valor_objetivo_emaus: companyQuery.data.valor_objetivo_emaus ?? 460000,
+        public_dashboard_enabled: companyQuery.data.public_dashboard_enabled ?? false,
+        public_slug: companyQuery.data.public_slug ?? ""
       });
     }
   }, [companyQuery.data, form]);
@@ -51,6 +55,13 @@ export function SettingsPage() {
       toast.error(getApiErrorMessage(error, "No fue posible actualizar la configuracion"));
     }
   });
+
+  const publicDashboardEnabled = form.watch("public_dashboard_enabled");
+  const publicSlug = form.watch("public_slug");
+  const publicUrl =
+    publicDashboardEnabled && publicSlug
+      ? `${window.location.origin}/public/${publicSlug}`
+      : null;
 
   return (
     <div className="space-y-6">
@@ -86,6 +97,40 @@ export function SettingsPage() {
               disabled={!canEdit}
               {...form.register("valor_objetivo_emaus", { valueAsNumber: true })}
             />
+            <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <span>
+                <span className="block font-semibold text-slate-900">Portal publico informativo</span>
+                <span className="block text-xs text-slate-500">
+                  Habilita una vista publica de solo lectura para esta empresa.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+                disabled={!canEdit}
+                {...form.register("public_dashboard_enabled")}
+              />
+            </label>
+            <input
+              className="input-light"
+              placeholder="Slug publico"
+              disabled={!canEdit || !publicDashboardEnabled}
+              {...form.register("public_slug", {
+                onChange: (event) => {
+                  event.target.value = event.target.value.toLowerCase().replace(/\s+/g, "-");
+                }
+              })}
+            />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              {publicUrl ? (
+                <>
+                  URL publica activa:
+                  <div className="mt-1 break-all font-medium text-slate-900">{publicUrl}</div>
+                </>
+              ) : (
+                "Activa el portal y define un slug unico para publicar la URL."
+              )}
+            </div>
             {canEdit ? (
               <button className="btn-primary" type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? "Guardando..." : "Guardar configuracion"}
