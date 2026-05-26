@@ -9,6 +9,7 @@ import {
   deleteProgramAction,
   deleteWorkoutLogAction,
   fitnessDashboardAction,
+  getFitnessClientAction,
   getProgramAction,
   listExercisesAction,
   listFitnessClientsAction,
@@ -41,6 +42,7 @@ export const fitnessRouter = Router();
 fitnessRouter.get("/dashboard", validate(fitnessDashboardSchema), asyncHandler(fitnessDashboardAction));
 
 fitnessRouter.get("/clients", validate(fitnessListSchema), asyncHandler(listFitnessClientsAction));
+fitnessRouter.get("/clients/:id", validate(fitnessParamsSchema), asyncHandler(getFitnessClientAction));
 fitnessRouter.post("/clients", authorize("super_admin", "admin", "operator"), validate(fitnessClientCreateSchema), asyncHandler(createFitnessClientAction));
 fitnessRouter.put("/clients/:id", authorize("super_admin", "admin", "operator"), validate(fitnessClientUpdateSchema), asyncHandler(updateFitnessClientAction));
 fitnessRouter.delete("/clients/:id", authorize("super_admin", "admin"), validate(fitnessParamsSchema), asyncHandler(deleteFitnessClientAction));

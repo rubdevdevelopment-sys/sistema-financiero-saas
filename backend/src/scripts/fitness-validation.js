@@ -130,6 +130,7 @@ async function ensureDemoProfile(companyId, clientUserId, trainerRequest) {
         weight_kg: 78,
         height_cm: 176,
         goal: "Ganar fuerza y mejorar composicion corporal",
+        membership_type: "monthly",
         experience_level: "intermediate",
         injuries: "Molestia leve de rodilla derecha",
         status: "active",
@@ -149,6 +150,7 @@ async function ensureDemoProfile(companyId, clientUserId, trainerRequest) {
       weight_kg: 78,
       height_cm: 176,
       goal: "Ganar fuerza y mejorar composicion corporal",
+      membership_type: "monthly",
       experience_level: "intermediate",
       injuries: "Molestia leve de rodilla derecha",
       status: "active",
@@ -180,6 +182,7 @@ async function ensureDemoExercise(companyId, trainerRequest) {
       company_id: companyId,
       name: "Sentadilla con barra",
       muscle_group: "Pierna",
+      category: "pierna",
       equipment: "Barra olimpica",
       instructions: "Mantener torso firme, profundidad controlada y rodillas alineadas.",
       video_url: "https://example.com/sentadilla"
@@ -350,6 +353,7 @@ async function runCrudValidation(company, trainerRequest, clientRequest, client,
       weight_kg: 70,
       height_cm: 172,
       goal: "Validar CRUD",
+      membership_type: "monthly",
       experience_level: "beginner",
       status: "active"
     },
@@ -364,6 +368,7 @@ async function runCrudValidation(company, trainerRequest, clientRequest, client,
       company_id: company.id,
       name: `Press Demo ${suffix}`,
       muscle_group: "Pecho",
+      category: "pecho",
       equipment: "Mancuernas",
       instructions: "Controlar fase excentrica"
     },
@@ -434,7 +439,7 @@ async function runCrudValidation(company, trainerRequest, clientRequest, client,
     },
     trainerRequest
   );
-  assert(editedProgram.structure.some((row) => row.day_number === 2), "No edito estructura de rutina");
+  assert(editedProgram.structure.some((week) => week.days.some((day) => day.day_number === 2)), "No edito estructura de rutina");
   await deleteProgram(tempProgram.id, trainerRequest);
 
   const tempLog = await createWorkoutLog(
@@ -534,6 +539,7 @@ async function main() {
   await applyMigration("backend/supabase/migrations/011_fitness_module_foundation.sql");
   await applyMigration("backend/supabase/migrations/012_fitness_client_role.sql");
   await applyMigration("backend/supabase/migrations/013_fitness_soft_delete_unique_indexes.sql");
+  await applyMigration("backend/supabase/migrations/014_fitness_experience_upgrade.sql");
   const schema = await inspectSchema();
 
   const company = await ensureRubDevFitness();

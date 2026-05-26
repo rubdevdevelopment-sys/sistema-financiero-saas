@@ -1,6 +1,13 @@
 import { query } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
+function mergeFitnessSettings(currentSettings = {}, nextSettings = {}) {
+  return {
+    ...(currentSettings ?? {}),
+    ...(nextSettings ?? {})
+  };
+}
+
 async function ensurePublicSlugAvailable(publicSlug, companyId = null) {
   if (!publicSlug) {
     return;
@@ -61,9 +68,10 @@ export async function createCompany(data) {
         valor_objetivo_emaus,
         active,
         public_dashboard_enabled,
-        public_slug
+        public_slug,
+        fitness_settings
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       returning *
     `,
     [
@@ -78,7 +86,8 @@ export async function createCompany(data) {
       data.valor_objetivo_emaus,
       data.active,
       data.public_dashboard_enabled ?? false,
-      data.public_slug ?? null
+      data.public_slug ?? null,
+      JSON.stringify(data.fitness_settings ?? {})
     ]
   );
 
@@ -142,6 +151,7 @@ export async function updateCompany(id, data) {
           active = $10,
           public_dashboard_enabled = $11,
           public_slug = $12,
+          fitness_settings = $13,
           updated_at = now()
       where id = $1
       returning *
@@ -158,7 +168,8 @@ export async function updateCompany(id, data) {
       data.valor_objetivo_emaus ?? current.valor_objetivo_emaus,
       data.active ?? current.active,
       data.public_dashboard_enabled ?? current.public_dashboard_enabled,
-      nextPublicSlug ?? null
+      nextPublicSlug ?? null,
+      JSON.stringify(mergeFitnessSettings(current.fitness_settings, data.fitness_settings))
     ]
   );
 
@@ -234,6 +245,7 @@ export async function updateCurrentCompany(requestUser, data, filters = {}) {
           valor_objetivo_emaus = $5,
           public_dashboard_enabled = $6,
           public_slug = $7,
+          fitness_settings = $8,
           updated_at = now()
       where id = $1
       returning *
@@ -245,7 +257,8 @@ export async function updateCurrentCompany(requestUser, data, filters = {}) {
       data.email !== undefined ? data.email : current.email,
       data.valor_objetivo_emaus ?? current.valor_objetivo_emaus,
       data.public_dashboard_enabled ?? current.public_dashboard_enabled,
-      nextPublicSlug ?? null
+      nextPublicSlug ?? null,
+      JSON.stringify(mergeFitnessSettings(current.fitness_settings, data.fitness_settings))
     ]
   );
 

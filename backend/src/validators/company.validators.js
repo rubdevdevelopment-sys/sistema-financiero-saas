@@ -33,6 +33,11 @@ const nullableEmail = z.preprocess(
   z.string().email().optional().nullable()
 );
 
+const nullableUrl = z.preprocess(
+  emptyStringToNull,
+  z.string().url().optional().nullable()
+);
+
 const businessModelSchema = z.enum([
   "standard",
   "cooperative_fund",
@@ -50,6 +55,42 @@ const optionalPublicSlugSchema = z.preprocess(
   z.string().min(2).regex(/^[a-z0-9-]+$/).optional().nullable()
 );
 
+const fitnessSettingsSchema = z.object({
+  gym_name: nullableString,
+  logo_url: nullableUrl,
+  hero_title: nullableString,
+  hero_subtitle: nullableString,
+  accent_color: nullableString,
+  secondary_color: nullableString,
+  contact_phone: nullableString,
+  contact_email: nullableEmail,
+  whatsapp: nullableString,
+  instagram: nullableString,
+  facebook: nullableString,
+  tiktok: nullableString,
+  address: nullableString,
+  hours_summary: nullableString,
+  portal_cta_text: nullableString,
+  portal_cta_url: nullableUrl,
+  trainers: z.array(z.object({
+    name: z.string().trim().min(2),
+    role: z.string().trim().min(2),
+    bio: nullableString,
+    image_url: nullableUrl
+  })).optional(),
+  testimonials: z.array(z.object({
+    name: z.string().trim().min(2),
+    quote: z.string().trim().min(4),
+    goal: nullableString
+  })).optional(),
+  plans: z.array(z.object({
+    name: z.string().trim().min(2),
+    price: z.string().trim().min(1),
+    label: nullableString,
+    description: nullableString
+  })).optional()
+}).partial();
+
 export const createCompanySchema = z.object({
   body: z.object({
     name: z.string().trim().min(2),
@@ -66,7 +107,8 @@ export const createCompanySchema = z.object({
     valor_objetivo_emaus: z.coerce.number().min(0).default(460000),
     active: z.boolean().optional().default(true),
     public_dashboard_enabled: z.boolean().optional().default(false),
-    public_slug: optionalPublicSlugSchema
+    public_slug: optionalPublicSlugSchema,
+    fitness_settings: fitnessSettingsSchema.optional()
   }).superRefine((value, ctx) => {
     if (value.public_dashboard_enabled && !value.public_slug) {
       ctx.addIssue({
@@ -92,7 +134,8 @@ export const updateCompanySchema = z.object({
     valor_objetivo_emaus: z.coerce.number().min(0).optional(),
     active: z.boolean().optional(),
     public_dashboard_enabled: z.boolean().optional(),
-    public_slug: optionalPublicSlugSchema
+    public_slug: optionalPublicSlugSchema,
+    fitness_settings: fitnessSettingsSchema.optional()
   }).superRefine((value, ctx) => {
     if (value.public_dashboard_enabled === true && !value.public_slug) {
       ctx.addIssue({
@@ -115,7 +158,8 @@ export const updateCurrentCompanySchema = z.object({
     email: nullableEmail,
     valor_objetivo_emaus: z.coerce.number().min(0).optional(),
     public_dashboard_enabled: z.boolean().optional(),
-    public_slug: optionalPublicSlugSchema
+    public_slug: optionalPublicSlugSchema,
+    fitness_settings: fitnessSettingsSchema.optional()
   }).superRefine((value, ctx) => {
     if (value.public_dashboard_enabled === true && !value.public_slug) {
       ctx.addIssue({

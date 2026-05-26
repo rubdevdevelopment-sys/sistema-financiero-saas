@@ -51,8 +51,10 @@ export function AppShell() {
   const headerTitle = isCooperativeFund
     ? "Capital colectivo, cupos y prestamos internos"
     : isFitness
-      ? "Clientes, rutinas y progreso deportivo"
-    : "Recaudo, ingresos y egresos por empresa";
+      ? user?.role === "client"
+        ? "Tu ecosistema de entrenamiento personal"
+        : "Clientes, rutinas, progreso y adherencia deportiva"
+      : "Recaudo, ingresos y egresos por empresa";
   const defaultPath = isCooperativeFund ? "/fondos" : isFitness ? "/fitness" : "/dashboard";
 
   if (user?.role === "super_admin" && !activeCompany?.id) {
@@ -67,6 +69,10 @@ export function AppShell() {
     return <Navigate to="/fitness" replace />;
   }
 
+  if (isFitness && user?.role === "client" && ["/configuracion", "/admin/usuarios", "/admin/empresas"].some((path) => location.pathname.startsWith(path))) {
+    return <Navigate to="/fitness" replace />;
+  }
+
   if (!isCooperativeFund && location.pathname.startsWith(cooperativeOnlyPrefix)) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -76,15 +82,15 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className={`min-h-screen text-slate-900 ${isFitness ? "bg-[radial-gradient(circle_at_top_left,_rgba(132,204,22,0.14),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(6,182,212,0.12),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef4f5_38%,_#ffffff_100%)]" : "bg-slate-100"}`}>
       <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside className="bg-hero px-6 py-8 text-white">
+        <aside className={`px-6 py-8 text-white ${isFitness ? "bg-[linear-gradient(180deg,#0f172a_0%,#112938_35%,#1f2937_100%)]" : "bg-hero"}`}>
           <div className="mb-10">
             <p className="text-xs uppercase tracking-[0.3em] text-brand-100/80">
               {isSupportMode ? "Soporte RubDev" : productLabel}
             </p>
             <h1 className="mt-3 text-2xl font-semibold">{activeCompany?.name}</h1>
-            <p className="mt-2 text-sm text-slate-300">{productLabel}</p>
+            <p className="mt-2 text-sm text-slate-300">{isFitness && user?.role === "client" ? "Solo tu data, tu rutina y tu progreso." : productLabel}</p>
           </div>
 
           <nav className="space-y-2">
@@ -136,7 +142,7 @@ export function AppShell() {
                 </h2>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-                Cliente activo: <span className="font-semibold">{activeCompany?.name}</span>
+                {isFitness && user?.role === "client" ? "Portal personal" : "Empresa activa"}: <span className="font-semibold">{activeCompany?.name}</span>
               </div>
             </div>
           </header>

@@ -9,6 +9,7 @@ import {
   deleteProgram,
   deleteWorkoutLog,
   getFitnessDashboard,
+  getFitnessClientDetail,
   getProgramDetail,
   listExercises,
   listFitnessClients,
@@ -33,6 +34,11 @@ export async function listFitnessClientsAction(req, res) {
 export async function createFitnessClientAction(req, res) {
   const client = await createFitnessClient(req.validated.body, req.user);
   return sendSuccess(res, client, "Cliente fitness creado", 201);
+}
+
+export async function getFitnessClientAction(req, res) {
+  const client = await getFitnessClientDetail(req.validated.params.id, req.user);
+  return sendSuccess(res, client, "Detalle del cliente fitness obtenido");
 }
 
 export async function updateFitnessClientAction(req, res) {

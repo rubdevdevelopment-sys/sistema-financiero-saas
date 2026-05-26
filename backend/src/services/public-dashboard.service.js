@@ -9,6 +9,102 @@ function isFundLikeBusinessModel(model) {
   return ["cooperative_fund", "investment_fund", "rotating_capital", "lending_group"].includes(model);
 }
 
+async function getFitnessPublicMetrics(companyId, company) {
+  const fitnessSettings = company.fitness_settings ?? {};
+  const metricsResult = await query(
+    `
+      with clients as (
+        select
+          count(*)::int as total_clients,
+          count(*) filter (where status = 'active')::int as active_clients,
+          count(*) filter (
+            where membership_ends_on is not null
+              and membership_ends_on >= current_date
+              and membership_ends_on <= current_date + interval '7 days'
+          )::int as expiring_memberships
+        from fitness_clients
+        where company_id = $1
+          and deleted_at is null
+      ),
+      programs as (
+        select count(*)::int as active_programs
+        from workout_programs
+        where company_id = $1
+          and deleted_at is null
+          and status = 'active'
+      ),
+      logs as (
+        select
+          count(*)::int as workouts_month,
+          coalesce(sum(weight_used), 0) as total_load_month
+        from workout_logs
+        where company_id = $1
+          and deleted_at is null
+          and performed_on >= date_trunc('month', current_date)::date
+      ),
+      activity as (
+        select greatest(
+          coalesce((select max(updated_at) from companies where id = $1), 'epoch'::timestamptz),
+          coalesce((select max(updated_at) from fitness_clients where company_id = $1 and deleted_at is null), 'epoch'::timestamptz),
+          coalesce((select max(updated_at) from workout_programs where company_id = $1 and deleted_at is null), 'epoch'::timestamptz),
+          coalesce((select max(updated_at) from workout_logs where company_id = $1 and deleted_at is null), 'epoch'::timestamptz)
+        ) as last_updated_at
+      )
+      select
+        clients.total_clients,
+        clients.active_clients,
+        clients.expiring_memberships,
+        programs.active_programs,
+        logs.workouts_month,
+        logs.total_load_month,
+        activity.last_updated_at
+      from clients
+      cross join programs
+      cross join logs
+      cross join activity
+    `,
+    [companyId]
+  );
+
+  const metrics = metricsResult.rows[0] ?? {};
+
+  return {
+    dashboardType: "fitness",
+    updatedAt: metrics.last_updated_at,
+    cards: {
+      totalClientes: number(metrics.total_clients),
+      clientesActivos: number(metrics.active_clients),
+      rutinasActivas: number(metrics.active_programs),
+      entrenamientosMes: number(metrics.workouts_month),
+      cargaMensualKg: number(metrics.total_load_month),
+      membresiasPorVencer: number(metrics.expiring_memberships)
+    },
+    portal: {
+      gym_name: fitnessSettings.gym_name || company.name,
+      logo_url: fitnessSettings.logo_url ?? null,
+      hero_title: fitnessSettings.hero_title || "Rendimiento, disciplina y progreso medible.",
+      hero_subtitle:
+        fitnessSettings.hero_subtitle ||
+        "Entrenamiento premium con seguimiento individual, planes activos y una experiencia deportiva moderna.",
+      accent_color: fitnessSettings.accent_color || "#84cc16",
+      secondary_color: fitnessSettings.secondary_color || "#0f172a",
+      contact_phone: fitnessSettings.contact_phone || company.phone,
+      contact_email: fitnessSettings.contact_email || company.email,
+      whatsapp: fitnessSettings.whatsapp ?? null,
+      instagram: fitnessSettings.instagram ?? null,
+      facebook: fitnessSettings.facebook ?? null,
+      tiktok: fitnessSettings.tiktok ?? null,
+      address: fitnessSettings.address ?? null,
+      hours_summary: fitnessSettings.hours_summary || "Lunes a sabado · 5:00 a.m. - 10:00 p.m.",
+      portal_cta_text: fitnessSettings.portal_cta_text || "Agenda tu evaluacion",
+      portal_cta_url: fitnessSettings.portal_cta_url ?? null,
+      trainers: Array.isArray(fitnessSettings.trainers) ? fitnessSettings.trainers : [],
+      testimonials: Array.isArray(fitnessSettings.testimonials) ? fitnessSettings.testimonials : [],
+      plans: Array.isArray(fitnessSettings.plans) ? fitnessSettings.plans : []
+    }
+  };
+}
+
 async function getTraditionalPublicMetrics(companyId) {
   const metricsResult = await query(
     `
@@ -226,6 +322,7 @@ export async function getPublicCompanyDashboardBySlug(slug) {
         public_slug,
         public_dashboard_enabled,
         currency,
+        fitness_settings,
         updated_at,
         coalesce((
           select json_agg(cm.module_key order by cm.module_key)
@@ -257,13 +354,12 @@ export async function getPublicCompanyDashboardBySlug(slug) {
     isFundLikeBusinessModel(company.business_model) || activeModules.includes("cooperative_fund");
   const dashboardType = useFundLikeMetrics ? "fund_like" : "traditional";
 
-  console.log(company.business_model);
-  console.log(activeModules);
-  console.log(dashboardType);
-
-  const metrics = useFundLikeMetrics
-    ? await getFundLikePublicMetrics(company.id)
-    : await getTraditionalPublicMetrics(company.id);
+  const metrics =
+    company.business_model === "fitness" || activeModules.includes("fitness")
+      ? await getFitnessPublicMetrics(company.id, company)
+      : useFundLikeMetrics
+        ? await getFundLikePublicMetrics(company.id)
+        : await getTraditionalPublicMetrics(company.id);
 
   return {
     company: {
@@ -274,6 +370,7 @@ export async function getPublicCompanyDashboardBySlug(slug) {
     },
     dashboardType: metrics.dashboardType,
     updatedAt: metrics.updatedAt ?? company.updated_at,
-    cards: metrics.cards
+    cards: metrics.cards,
+    portal: metrics.portal ?? null
   };
 }
