@@ -85,7 +85,9 @@ export async function createCompany(data) {
   const company = rows[0];
 
   const modules = ["dashboard", "participants", "incomes", "expenses", "admin"];
-  if (data.business_model !== "standard") {
+  if (data.business_model === "fitness") {
+    modules.push("fitness");
+  } else if (data.business_model !== "standard") {
     modules.push("cooperative_fund");
   }
 
@@ -162,7 +164,17 @@ export async function updateCompany(id, data) {
 
   const company = rows[0];
 
-  if (company.business_model !== "standard") {
+  if (company.business_model === "fitness") {
+    await query(
+      `
+        insert into company_modules (company_id, module_key, enabled)
+        values ($1, 'fitness', true)
+        on conflict (company_id, module_key)
+        do update set enabled = true
+      `,
+      [company.id]
+    );
+  } else if (company.business_model !== "standard") {
     await query(
       `
         insert into company_modules (company_id, module_key, enabled)

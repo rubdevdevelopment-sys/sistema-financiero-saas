@@ -6,7 +6,7 @@ export const createUserSchema = z.object({
     full_name: z.string().min(3),
     email: z.string().email(),
     password: z.string().min(8),
-    role: z.enum(["super_admin", "admin", "operator"]),
+    role: z.enum(["super_admin", "admin", "operator", "client"]),
     active: z.boolean().optional().default(true)
   }),
   params: z.object({}).optional(),
@@ -16,7 +16,7 @@ export const createUserSchema = z.object({
 export const updateUserSchema = z.object({
   body: z.object({
     full_name: z.string().min(3),
-    role: z.enum(["super_admin", "admin", "operator"]),
+    role: z.enum(["super_admin", "admin", "operator", "client"]),
     active: z.boolean()
   }),
   params: z.object({

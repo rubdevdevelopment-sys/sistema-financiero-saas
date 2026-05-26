@@ -6,7 +6,12 @@ export function RoleRedirect() {
   const { user } = useAuth();
   const { activeCompany } = useActiveCompany();
   const businessModel = activeCompany?.business_model || user?.business_model || "standard";
-  const defaultPath = businessModel === "cooperative_fund" ? "/fondos" : "/dashboard";
+  const defaultPath =
+    businessModel === "cooperative_fund"
+      ? "/fondos"
+      : businessModel === "fitness"
+        ? "/fitness"
+        : "/dashboard";
 
   if (user?.role === "super_admin") {
     return (

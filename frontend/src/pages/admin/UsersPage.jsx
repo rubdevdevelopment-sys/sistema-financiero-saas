@@ -120,6 +120,7 @@ export function UsersPage() {
               {user.role === "super_admin" && <option value="super_admin">Super Admin</option>}
               <option value="admin">Administrador</option>
               <option value="operator">Operador</option>
+              <option value="client">Cliente fitness</option>
             </select>
             <button className="btn-primary" type="submit">
               Crear usuario

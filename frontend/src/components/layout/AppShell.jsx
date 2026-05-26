@@ -25,8 +25,15 @@ const cooperativeFundMenu = [
   { key: "settings", to: "/configuracion", label: "Configuracion" }
 ];
 
+const fitnessMenu = [
+  { key: "fitness-dashboard", to: "/fitness", label: "Rendimiento" },
+  { key: "users", to: "/admin/usuarios", label: "Usuarios", roles: ["super_admin", "admin"] },
+  { key: "settings", to: "/configuracion", label: "Configuracion" }
+];
+
 const standardOnlyPaths = ["/dashboard", "/participantes", "/ingresos", "/egresos"];
 const cooperativeOnlyPrefix = "/fondos";
+const fitnessOnlyPrefix = "/fitness";
 
 export function AppShell() {
   const { user, logout } = useAuth();
@@ -34,14 +41,19 @@ export function AppShell() {
   const location = useLocation();
   const businessModel = activeCompany?.business_model || user?.business_model || "standard";
   const isCooperativeFund = businessModel === "cooperative_fund";
-  const menu = isCooperativeFund ? cooperativeFundMenu : standardMenu;
+  const isFitness = businessModel === "fitness";
+  const menu = isFitness ? fitnessMenu : isCooperativeFund ? cooperativeFundMenu : standardMenu;
   const productLabel = isCooperativeFund
     ? "Fondo solidario rotativo"
+    : isFitness
+      ? "Fitness performance SaaS"
     : "Gestion administrativa y recaudo";
   const headerTitle = isCooperativeFund
     ? "Capital colectivo, cupos y prestamos internos"
+    : isFitness
+      ? "Clientes, rutinas y progreso deportivo"
     : "Recaudo, ingresos y egresos por empresa";
-  const defaultPath = isCooperativeFund ? "/fondos" : "/dashboard";
+  const defaultPath = isCooperativeFund ? "/fondos" : isFitness ? "/fitness" : "/dashboard";
 
   if (user?.role === "super_admin" && !activeCompany?.id) {
     return <Navigate to="/super-admin" replace />;
@@ -51,8 +63,16 @@ export function AppShell() {
     return <Navigate to="/fondos" replace />;
   }
 
+  if (isFitness && (standardOnlyPaths.includes(location.pathname) || location.pathname.startsWith(cooperativeOnlyPrefix))) {
+    return <Navigate to="/fitness" replace />;
+  }
+
   if (!isCooperativeFund && location.pathname.startsWith(cooperativeOnlyPrefix)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (!isFitness && location.pathname.startsWith(fitnessOnlyPrefix)) {
+    return <Navigate to={defaultPath} replace />;
   }
 
   return (
@@ -110,7 +130,7 @@ export function AppShell() {
           <header className="border-b border-slate-200 bg-white/90 px-6 py-5 backdrop-blur">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm text-slate-500">Panel administrativo y financiero</p>
+                <p className="text-sm text-slate-500">Panel administrativo multiempresa</p>
                 <h2 className="text-xl font-semibold text-slate-950">
                   {headerTitle}
                 </h2>

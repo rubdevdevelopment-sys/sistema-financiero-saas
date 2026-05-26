@@ -43,11 +43,16 @@ const businessModelOptions = [
     value: "lending_group",
     label: "Grupo de prestamos",
     description: "Modelo orientado a prestamos internos, cuotas, mora y multas."
+  },
+  {
+    value: "fitness",
+    label: "Fitness y coaching deportivo",
+    description: "Vertical para entrenadores, gimnasios, clientes, rutinas y progreso deportivo."
   }
 ];
 
 const visibleBusinessModelOptions = businessModelOptions.filter((option) =>
-  ["standard", "cooperative_fund"].includes(option.value)
+  ["standard", "cooperative_fund", "fitness"].includes(option.value)
 );
 
 function normalizeCompanySlug(value) {

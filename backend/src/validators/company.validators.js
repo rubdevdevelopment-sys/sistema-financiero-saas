@@ -38,7 +38,8 @@ const businessModelSchema = z.enum([
   "cooperative_fund",
   "investment_fund",
   "rotating_capital",
-  "lending_group"
+  "lending_group",
+  "fitness"
 ]);
 
 const optionalPublicSlugSchema = z.preprocess(
