@@ -310,7 +310,13 @@ async function createProgramStructure(companyId, programId, weeks, requestUser) 
           values ($1, $2, $3, $4, $5)
           returning id
         `,
-        [companyId, weekResult.rows[0].id, day.day_number, day.name, day.notes ?? null]
+                [
+          companyId,
+          weekResult.rows[0].id,
+          day.day_number,
+          day.name || `Dia ${day.day_number}`,
+          day.notes ?? null
+        ]
       );
 
       for (const item of day.exercises ?? []) {

@@ -253,7 +253,16 @@ function ProgramDayBuilder({ day, exercises, onChange, onAddExercise, onRemoveEx
     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
       <div className="grid gap-3 lg:grid-cols-[120px_1fr]">
         <input className="input-light" type="number" min="1" max="7" value={day.day_number} onChange={(event) => onChange({ ...day, day_number: Number(event.target.value) })} />
-        <input className="input-light" value={day.name} onChange={(event) => onChange({ ...day, name: event.target.value })} placeholder="Nombre del dia" />
+        <input
+  className="input-light"
+  value={day.name || `Dia ${day.day_number}`}
+  onChange={(event) =>
+    updateDay(weekIndex, dayIndex, {
+      name: event.target.value
+    })
+  }
+  placeholder="Nombre del día"
+/>
       </div>
       <textarea className="input-light mt-3 min-h-20" value={day.notes} onChange={(event) => onChange({ ...day, notes: event.target.value })} placeholder="Notas del entrenador" />
       <div className="mt-4 space-y-3">
@@ -398,6 +407,45 @@ export function FitnessDashboardPage() {
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "No fue posible guardar el ejercicio"))
   });
+
+const normalizedProgram = {
+  ...programForm,
+
+  starts_on: programForm.starts_on
+    ? programForm.starts_on.split("T")[0]
+    : null,
+
+  ends_on: programForm.ends_on
+    ? programForm.ends_on.split("T")[0]
+    : null,
+
+  weeks: (programForm.weeks || []).map((week) => ({
+    ...week,
+
+    title: week.title || `Semana ${week.week_number}`,
+
+    days: (week.days || []).map((day) => ({
+      ...day,
+
+      name: day.name || `Dia ${day.day_number}`,
+
+      exercises: (day.exercises || []).map((exercise) => ({
+        ...exercise,
+
+        sets: Number(exercise.sets || 0),
+        rest_seconds: Number(exercise.rest_seconds || 0),
+
+        rir:
+          exercise.rir === "" ||
+          exercise.rir === null ||
+          exercise.rir === undefined
+            ? null
+            : Number(exercise.rir)
+      }))
+    }))
+  }))
+};
+
   const programMutation = useMutation({
     mutationFn: (payload) => editingProgram ? updateFitnessProgram(editingProgram.id, payload) : createFitnessProgram(payload),
     onSuccess: () => {
@@ -580,18 +628,28 @@ export function FitnessDashboardPage() {
     exerciseMutation.mutate({ ...params, ...exerciseForm });
   }
 
-  function submitProgram(event) {
-    event.preventDefault();
-    programMutation.mutate({
-      ...params,
-      ...programForm,
-      fitness_client_id: programForm.fitness_client_id || null,
-      ends_on: programForm.ends_on || null,
-      weeks: programForm.weeks.map((week) => ({
-        ...week,
-        days: week.days.map((day) => ({
-          ...day,
-          exercises: day.exercises.filter((item) => item.exercise_id).map((item, index) => ({
+function submitProgram(event) {
+  event.preventDefault();
+
+  programMutation.mutate({
+    ...params,
+    ...normalizedProgram,
+    fitness_client_id: programForm.fitness_client_id || null,
+    starts_on: normalizedProgram.starts_on,
+    ends_on: normalizedProgram.ends_on,
+    weeks: programForm.weeks.map((week) => ({
+      ...week,
+      days: week.days.map((day) => ({
+  ...day,
+
+  name:
+    day.name && day.name.trim() !== ""
+      ? day.name
+      : `Dia ${day.day_number}`,
+
+  exercises: day.exercises
+          .filter((item) => item.exercise_id)
+          .map((item, index) => ({
             ...item,
             exercise_order: index + 1,
             planned_weight: toNullableNumber(item.planned_weight),
@@ -602,10 +660,10 @@ export function FitnessDashboardPage() {
             superset_group: toNullableText(item.superset_group),
             notes: toNullableText(item.notes)
           }))
-        }))
       }))
-    });
-  }
+    }))
+  });
+}
 
   function submitLog(event) {
     event.preventDefault();
@@ -1000,7 +1058,24 @@ export function FitnessDashboardPage() {
                       key={dayIndex}
                       day={day}
                       exercises={exercises}
-                      onChange={(nextDay) => updateWeek({ ...week, days: week.days.map((entry, index) => index === dayIndex ? nextDay : entry) }, weekIndex)}
+                      onChange={(nextDay) =>
+  updateWeek(
+    {
+      ...week,
+      days: week.days.map((entry, index) =>
+        index === dayIndex
+          ? {
+              ...nextDay,
+              name:
+                nextDay.name?.trim() ||
+                `Dia ${nextDay.day_number || index + 1}`
+            }
+          : entry
+      )
+    },
+    weekIndex
+  )
+}
                       onAddExercise={() => updateWeek({ ...week, days: week.days.map((entry, index) => index === dayIndex ? { ...entry, exercises: [...entry.exercises, { exercise_id: "", exercise_order: entry.exercises.length + 1, block_name: "", block_type: "straight", superset_group: "", planned_sets: 3, planned_reps: "8-12", planned_weight: "", target_rir: "", target_rpe: "", rest_seconds: "", notes: "" }] } : entry) }, weekIndex)}
                       onRemoveExercise={(exerciseIndex) => updateWeek({ ...week, days: week.days.map((entry, index) => index === dayIndex ? { ...entry, exercises: entry.exercises.filter((_, itemIndex) => itemIndex !== exerciseIndex) } : entry) }, weekIndex)}
                     />
@@ -1032,7 +1107,7 @@ export function FitnessDashboardPage() {
                     <div key={day.id} className="rounded-3xl bg-slate-50 p-4">
                       <p className="font-semibold text-slate-950">{day.name}</p>
                       <div className="mt-3 space-y-2">
-                        {day.exercises.map((exercise) => (
+                        {(day.exercises || day.workout_day_exercises || []).map((exercise) => (
                           <div key={exercise.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
                             {exercise.exercise?.name} · {exercise.planned_sets} x {exercise.planned_reps} · descanso {exercise.rest_seconds ?? 0}s
                           </div>

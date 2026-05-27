@@ -1,0 +1,70 @@
+
+> sistema-financiero-backend@1.0.0 dev
+> node --watch src/server.js
+
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Restarting 'src/server.js'
+[INFO] Sistema Financiero SaaS API escuchando en puerto 4000 {}
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+[INFO] Sistema Financiero SaaS API escuchando en puerto 4000 {}
+[0mGET /api/fitness/dashboard?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 882.935 ms - 5608[0m
+[0mGET /api/fitness/programs?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [36m304[0m 989.289 ms - -[0m
+[0mGET /api/fitness/clients?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&search=&membership_type=&status= [32m200[0m 1000.593 ms - 1877[0m
+[0mGET /api/fitness/exercises?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&search=&category=&difficulty= [32m200[0m 997.717 ms - 5385[0m
+[0mGET /api/fitness/logs?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&date_from=&date_to= [36m304[0m 1136.435 ms - -[0m
+Restarting 'src/server.js'
+[INFO] Sistema Financiero SaaS API escuchando en puerto 4000 {}
+[0mPOST /api/auth/login [32m200[0m 787.866 ms - 653[0m
+[0mGET /api/fitness/dashboard?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [36m304[0m 716.366 ms - -[0m
+[0mGET /api/fitness/clients?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&search=&membership_type=&status= [36m304[0m 817.703 ms - -[0m
+[0mGET /api/fitness/exercises?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&search=&category=&difficulty= [36m304[0m 837.995 ms - -[0m
+[0mGET /api/fitness/programs?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [36m304[0m 843.737 ms - -[0m
+[0mGET /api/fitness/logs?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&date_from=&date_to= [36m304[0m 981.526 ms - -[0m
+[0mPUT /api/fitness/clients/65c432e5-856e-4173-8e85-7985ca7ca0a0 [32m200[0m 1037.115 ms - 1011[0m
+[0mGET /api/fitness/dashboard?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 727.926 ms - 5613[0m
+[0mGET /api/fitness/programs?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 855.419 ms - 1912[0m
+[0mGET /api/fitness/clients?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&search=&membership_type=&status= [32m200[0m 867.149 ms - 1933[0m
+[0mGET /api/fitness/exercises?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&search=&category=&difficulty= [36m304[0m 867.310 ms - -[0m
+[0mGET /api/fitness/logs?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597&date_from=&date_to= [32m200[0m 978.604 ms - 5015[0m
+[0mGET /api/fitness/clients/65c432e5-856e-4173-8e85-7985ca7ca0a0?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 1669.173 ms - 6463[0m
+[0mGET /api/fitness/programs/10f190a3-66fe-4dd3-827d-968c8dc12d0f?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 1569.097 ms - 2602[0m
+[0mPUT /api/fitness/programs/10f190a3-66fe-4dd3-827d-968c8dc12d0f [31m500[0m 3491.329 ms - 132[0m
+[0mGET /api/fitness/programs/10f190a3-66fe-4dd3-827d-968c8dc12d0f?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 1603.337 ms - 863[0m
+[0mGET /api/fitness/programs/c8ca9380-c951-4211-906b-553f7b415f33?company_id=d94e135a-b0f5-4623-84f2-cbfc2d2da597 [32m200[0m 281.239 ms - 1404[0m
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+Failed running 'src/server.js'. Waiting for file changes before restarting...
+Restarting 'src/server.js'
+[INFO] Sistema Financiero SaaS API escuchando en puerto 4000 {}
+Restarting 'src/server.js'
+[INFO] Sistema Financiero SaaS API escuchando en puerto 4000 {}
