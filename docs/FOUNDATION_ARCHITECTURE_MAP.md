@@ -123,6 +123,14 @@ La foundation enterprise se prepara como capas vacias y estables alrededor de la
 - La gobernanza futura de features prepara tenant flags, beta flags, environment flags, rollout gradual y premium features.
 - La estrategia modular SaaS future-safe evitara reemplazos bruscos mientras conviven `company_modules` y `company_features`.
 
+## Foundation tenant middleware preparado
+
+- `backend/src/tenant/tenant.middleware.js` existe como foundation-only.
+- Aun no esta conectado al runtime.
+- Su funcion futura sera resolver tenant por sesion, subdominio, headers o `company_id` explicito.
+- La estrategia debe proteger EMAUS y evitar tenant leakage antes de cualquier conexion productiva.
+- No modifica auth actual ni bloquea requests mientras permanezca desacoplado.
+
 ## Resultado esperado de esta fase
 
 La base queda lista para crecimiento enterprise posterior mediante trabajo incremental, con aislamiento seguro respecto a produccion y sin impacto funcional sobre EMAUS.
