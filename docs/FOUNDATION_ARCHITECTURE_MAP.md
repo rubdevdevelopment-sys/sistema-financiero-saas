@@ -107,6 +107,14 @@ La foundation enterprise se prepara como capas vacias y estables alrededor de la
 - El fallback futuro respetara `companies.timezone` y `companies.currency` mientras `company_settings` no sea la fuente activa.
 - No modifica `company.service.js` ni cambia el comportamiento actual.
 
+## Foundation branding service preparado
+
+- `backend/src/branding/branding.service.js` existe como foundation-only.
+- Branding todavia no se usa en runtime.
+- El fallback global sera obligatorio mientras no exista branding propio por empresa.
+- La estrategia future-safe multiempresa preparara branding por tenant sin reemplazar themes, layouts ni CSS actuales de forma anticipada.
+- No modifica frontend runtime ni comportamiento visual actual.
+
 ## Resultado esperado de esta fase
 
 La base queda lista para crecimiento enterprise posterior mediante trabajo incremental, con aislamiento seguro respecto a produccion y sin impacto funcional sobre EMAUS.
