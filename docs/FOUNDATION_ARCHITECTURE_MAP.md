@@ -131,6 +131,14 @@ La foundation enterprise se prepara como capas vacias y estables alrededor de la
 - La estrategia debe proteger EMAUS y evitar tenant leakage antes de cualquier conexion productiva.
 - No modifica auth actual ni bloquea requests mientras permanezca desacoplado.
 
+## Foundation ownership validator preparado
+
+- `backend/src/permissions/ownership.validator.js` existe como foundation-only.
+- Todavia no esta conectado al runtime.
+- Su objetivo futuro es reforzar tenant isolation enterprise y prevenir tenant leakage.
+- Prepara reglas reutilizables para ownership enforcement y RBAC futuro sin modificar auth actual.
+- Retorna resultados defensivos y consistentes sin bloquear el comportamiento productivo actual.
+
 ## Resultado esperado de esta fase
 
 La base queda lista para crecimiento enterprise posterior mediante trabajo incremental, con aislamiento seguro respecto a produccion y sin impacto funcional sobre EMAUS.
