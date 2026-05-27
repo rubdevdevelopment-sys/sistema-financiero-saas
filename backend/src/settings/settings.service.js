@@ -7,6 +7,10 @@ function normalizeNullableString(value) {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
+function isRelationMissingError(error) {
+  return error?.code === "42P01";
+}
+
 function buildSettingsShape(settings, fallback) {
   return {
     id: settings?.id ?? null,
@@ -42,17 +46,25 @@ export async function getCompanySettings(companyId) {
     return null;
   }
 
-  const { rows } = await query(
-    `
-      select *
-      from company_settings
-      where company_id = $1
-      limit 1
-    `,
-    [companyId]
-  );
+  try {
+    const { rows } = await query(
+      `
+        select *
+        from company_settings
+        where company_id = $1
+        limit 1
+      `,
+      [companyId]
+    );
 
-  return rows[0] ?? null;
+    return rows[0] ?? null;
+  } catch (error) {
+    if (isRelationMissingError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function getCompanySettingsWithFallback(companyId) {
@@ -60,28 +72,46 @@ export async function getCompanySettingsWithFallback(companyId) {
     return null;
   }
 
-  const { rows } = await query(
-    `
-      select c.id,
-             c.timezone,
-             c.currency,
-             cs.id as settings_id,
-             cs.company_id as settings_company_id,
-             cs.timezone as settings_timezone,
-             cs.locale as settings_locale,
-             cs.language as settings_language,
-             cs.currency as settings_currency,
-             cs.date_format as settings_date_format,
-             cs.number_format as settings_number_format,
-             cs.created_at as settings_created_at,
-             cs.updated_at as settings_updated_at
-      from companies c
-      left join company_settings cs on cs.company_id = c.id
-      where c.id = $1
-      limit 1
-    `,
-    [companyId]
-  );
+  let rows;
+
+  try {
+    ({ rows } = await query(
+      `
+        select c.id,
+               c.timezone,
+               c.currency,
+               cs.id as settings_id,
+               cs.company_id as settings_company_id,
+               cs.timezone as settings_timezone,
+               cs.locale as settings_locale,
+               cs.language as settings_language,
+               cs.currency as settings_currency,
+               cs.date_format as settings_date_format,
+               cs.number_format as settings_number_format,
+               cs.created_at as settings_created_at,
+               cs.updated_at as settings_updated_at
+        from companies c
+        left join company_settings cs on cs.company_id = c.id
+        where c.id = $1
+        limit 1
+      `,
+      [companyId]
+    ));
+  } catch (error) {
+    if (!isRelationMissingError(error)) {
+      throw error;
+    }
+
+    ({ rows } = await query(
+      `
+        select id, timezone, currency
+        from companies
+        where id = $1
+        limit 1
+      `,
+      [companyId]
+    ));
+  }
 
   const row = rows[0];
 

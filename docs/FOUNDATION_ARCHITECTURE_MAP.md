@@ -139,6 +139,16 @@ La foundation enterprise se prepara como capas vacias y estables alrededor de la
 - Prepara reglas reutilizables para ownership enforcement y RBAC futuro sin modificar auth actual.
 - Retorna resultados defensivos y consistentes sin bloquear el comportamiento productivo actual.
 
+## Phase 2 runtime preparation
+
+- `backend/src/foundation/context/tenant-context.service.js` prepara contexto tenant enriquecido con fallback seguro.
+- `backend/src/foundation/features/feature-guard.service.js` prepara feature governance sin reemplazar `company_modules`.
+- `backend/src/foundation/cache/foundation-cache.service.js` agrega cache liviano no invasivo para snapshots foundation.
+- `backend/src/foundation/runtime/foundation-runtime.service.js` agrega agregacion segura de tenant, settings, branding y features.
+- `frontend/src/foundation/providers/*` y `frontend/src/foundation/hooks/*` existen como capas aisladas y no estan conectadas globalmente.
+- Las reglas de runtime seguro viven en `docs/FOUNDATION_SAFE_RUNTIME_RULES.md`.
+- La preparacion de staging vive en `docs/STAGING_MIGRATION_EXECUTION_PLAN.md`.
+
 ## Resultado esperado de esta fase
 
 La base queda lista para crecimiento enterprise posterior mediante trabajo incremental, con aislamiento seguro respecto a produccion y sin impacto funcional sobre EMAUS.

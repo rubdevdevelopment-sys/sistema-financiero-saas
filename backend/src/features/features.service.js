@@ -4,6 +4,10 @@ function normalizeNullableString(value) {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
+function isRelationMissingError(error) {
+  return error?.code === "42P01";
+}
+
 function normalizeFeatureRow(row) {
   return {
     id: row?.id ?? null,
@@ -26,15 +30,25 @@ export async function getCompanyFeatures(companyId) {
     return buildDefaultFeaturesFallback();
   }
 
-  const { rows } = await query(
-    `
-      select *
-      from company_features
-      where company_id = $1
-      order by feature_key asc, environment asc nulls first
-    `,
-    [companyId]
-  );
+  let rows;
+
+  try {
+    ({ rows } = await query(
+      `
+        select *
+        from company_features
+        where company_id = $1
+        order by feature_key asc, environment asc nulls first
+      `,
+      [companyId]
+    ));
+  } catch (error) {
+    if (!isRelationMissingError(error)) {
+      throw error;
+    }
+
+    return buildDefaultFeaturesFallback();
+  }
 
   if (!rows.length) {
     return buildDefaultFeaturesFallback();
@@ -63,7 +77,17 @@ export async function getCompanyFeaturesByEnvironment(companyId, environment) {
       order by feature_key asc
     `;
   const params = normalizedEnvironment ? [companyId, normalizedEnvironment] : [companyId];
-  const { rows } = await query(sql, params);
+  let rows;
+
+  try {
+    ({ rows } = await query(sql, params));
+  } catch (error) {
+    if (!isRelationMissingError(error)) {
+      throw error;
+    }
+
+    return buildDefaultFeaturesFallback();
+  }
 
   if (!rows.length) {
     return buildDefaultFeaturesFallback();
@@ -83,16 +107,26 @@ export async function isFeatureEnabled(companyId, featureKey) {
     return false;
   }
 
-  const { rows } = await query(
-    `
-      select enabled
-      from company_features
-      where company_id = $1 and feature_key = $2
-      order by environment asc nulls first
-      limit 1
-    `,
-    [companyId, normalizedFeatureKey]
-  );
+  let rows;
+
+  try {
+    ({ rows } = await query(
+      `
+        select enabled
+        from company_features
+        where company_id = $1 and feature_key = $2
+        order by environment asc nulls first
+        limit 1
+      `,
+      [companyId, normalizedFeatureKey]
+    ));
+  } catch (error) {
+    if (!isRelationMissingError(error)) {
+      throw error;
+    }
+
+    return false;
+  }
 
   return Boolean(rows[0]?.enabled);
 }

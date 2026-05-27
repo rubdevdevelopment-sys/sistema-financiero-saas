@@ -16,6 +16,10 @@ function normalizeNullableBoolean(value) {
   return typeof value === "boolean" ? value : null;
 }
 
+function isRelationMissingError(error) {
+  return error?.code === "42P01";
+}
+
 function buildBrandingShape(branding, fallback) {
   return {
     id: branding?.id ?? null,
@@ -58,17 +62,25 @@ export async function getCompanyBranding(companyId) {
     return null;
   }
 
-  const { rows } = await query(
-    `
-      select *
-      from company_branding
-      where company_id = $1
-      limit 1
-    `,
-    [companyId]
-  );
+  try {
+    const { rows } = await query(
+      `
+        select *
+        from company_branding
+        where company_id = $1
+        limit 1
+      `,
+      [companyId]
+    );
 
-  return rows[0] ?? null;
+    return rows[0] ?? null;
+  } catch (error) {
+    if (isRelationMissingError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function getCompanyBrandingWithFallback(companyId) {
@@ -76,15 +88,25 @@ export async function getCompanyBrandingWithFallback(companyId) {
     return buildDefaultBrandingFallback();
   }
 
-  const { rows } = await query(
-    `
-      select *
-      from company_branding
-      where company_id = $1
-      limit 1
-    `,
-    [companyId]
-  );
+  let rows;
+
+  try {
+    ({ rows } = await query(
+      `
+        select *
+        from company_branding
+        where company_id = $1
+        limit 1
+      `,
+      [companyId]
+    ));
+  } catch (error) {
+    if (!isRelationMissingError(error)) {
+      throw error;
+    }
+
+    rows = [];
+  }
 
   const fallback = {
     ...buildDefaultBrandingFallback(),
