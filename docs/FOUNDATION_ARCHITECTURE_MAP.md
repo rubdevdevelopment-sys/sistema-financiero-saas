@@ -81,6 +81,15 @@ La foundation enterprise se prepara como capas vacias y estables alrededor de la
 - No ejecuta backfill ni sincronizacion automatica.
 - Su objetivo es preparar una evolucion futura hacia configuracion desacoplada por tenant con estrategia expand first.
 
+## Segunda migracion foundation permitida
+
+- `012_company_branding_foundation.sql` crea `company_branding` como capa complementaria de branding por tenant.
+- La tabla no reemplaza estilos globales, clases actuales, ni configuracion visual ya usada por el frontend.
+- Aun no se usa en runtime.
+- No modifica dashboards, `CompaniesPage`, CSS actual ni componentes existentes.
+- No ejecuta backfill ni sincronizacion automatica.
+- La evolucion futura debera usar fallback visual global cuando una empresa no tenga branding propio definido.
+
 ## Resultado esperado de esta fase
 
 La base queda lista para crecimiento enterprise posterior mediante trabajo incremental, con aislamiento seguro respecto a produccion y sin impacto funcional sobre EMAUS.
