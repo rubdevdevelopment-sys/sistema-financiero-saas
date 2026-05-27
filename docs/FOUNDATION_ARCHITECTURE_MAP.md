@@ -68,10 +68,18 @@ La foundation enterprise se prepara como capas vacias y estables alrededor de la
 ## Reglas oficiales de esta foundation
 
 - NO logica productiva todavia.
-- NO migraciones todavia.
+- NO migracion automatica de datos.
 - NO integracion con auth todavia.
 - NO cambios en modulos financieros todavia.
 - NO activacion automatica de features todavia.
+
+## Primera migracion foundation permitida
+
+- `011_company_settings_foundation.sql` crea `company_settings` como capa complementaria.
+- La tabla no reemplaza `companies.timezone` ni `companies.currency`.
+- No modifica queries, servicios, validators ni flujos actuales.
+- No ejecuta backfill ni sincronizacion automatica.
+- Su objetivo es preparar una evolucion futura hacia configuracion desacoplada por tenant con estrategia expand first.
 
 ## Resultado esperado de esta fase
 
