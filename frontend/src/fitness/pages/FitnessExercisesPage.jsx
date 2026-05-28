@@ -2,16 +2,16 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { listExercises } from "../api/exercisesApi.js";
-import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
+import { useFitnessCompanyScope } from "../hooks/useFitnessCompanyScope.js";
 import { getApiErrorMessage } from "../../utils/api.js";
 import { FoundationBadge } from "../../foundation/components/FoundationBadge.jsx";
 import { FoundationCard } from "../../foundation/components/FoundationCard.jsx";
 import { FoundationPageHeader } from "../../foundation/layouts/FoundationPageHeader.jsx";
-import { FoundationPageLayout } from "../../foundation/layouts/FoundationPageLayout.jsx";
 import { FoundationTable } from "../../foundation/tables/FoundationTable.jsx";
 import { FoundationTableToolbar } from "../../foundation/tables/FoundationTableToolbar.jsx";
+import { FitnessStatCard } from "../components/FitnessStatCard.jsx";
 
-function normalizeDifficultyTone(value) {
+function difficultyTone(value) {
   switch (value) {
     case "advanced":
       return "danger";
@@ -36,10 +36,10 @@ function formatLabel(value, fallback = "No definido") {
 }
 
 export function FitnessExercisesPage() {
-  const { activeCompany, isSupportMode } = useActiveCompany();
+  const { companyId, company, isSupportMode, isDemoScope, isLoading: isScopeLoading } =
+    useFitnessCompanyScope();
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const companyId = activeCompany?.id ?? null;
 
   const exercisesQuery = useQuery({
     queryKey: ["fitness-exercises", companyId],
@@ -56,13 +56,7 @@ export function FitnessExercisesPage() {
     }
 
     return rows.filter((item) =>
-      [
-        item?.name,
-        item?.category,
-        item?.muscle_group,
-        item?.equipment,
-        item?.difficulty
-      ]
+      [item?.name, item?.category, item?.muscle_group, item?.equipment, item?.difficulty]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );
@@ -72,39 +66,37 @@ export function FitnessExercisesPage() {
     () => [
       {
         key: "name",
-        label: "Name",
+        label: "Ejercicio",
         minWidth: "12rem"
       },
       {
         key: "category",
-        label: "Category",
+        label: "Categoria",
         render: (row) => formatLabel(row.category)
       },
       {
         key: "muscle_group",
-        label: "Muscle Group",
+        label: "Grupo muscular",
         render: (row) => formatLabel(row.muscle_group)
       },
       {
         key: "equipment",
-        label: "Equipment",
+        label: "Equipo",
         render: (row) => formatLabel(row.equipment)
       },
       {
         key: "difficulty",
-        label: "Difficulty",
+        label: "Dificultad",
         render: (row) => (
-          <FoundationBadge tone={normalizeDifficultyTone(row.difficulty)}>
-            {formatLabel(row.difficulty)}
-          </FoundationBadge>
+          <FoundationBadge tone={difficultyTone(row.difficulty)}>{formatLabel(row.difficulty)}</FoundationBadge>
         )
       },
       {
         key: "is_active",
-        label: "Is Active",
+        label: "Estado",
         render: (row) => (
           <FoundationBadge tone={row.is_active ? "success" : "neutral"} outlined={!row.is_active}>
-            {row.is_active ? "Active" : "Inactive"}
+            {row.is_active ? "Activo" : "Inactivo"}
           </FoundationBadge>
         )
       }
@@ -113,38 +105,38 @@ export function FitnessExercisesPage() {
   );
 
   const totalExercises = Array.isArray(exercisesQuery.data) ? exercisesQuery.data.length : 0;
+  const categoriesVisible = new Set(filteredExercises.map((item) => item.category).filter(Boolean)).size;
+  const equipmentVisible = new Set(filteredExercises.map((item) => item.equipment).filter(Boolean)).size;
 
   return (
-    <FoundationPageLayout>
+    <>
       <FoundationPageHeader
         eyebrow="Fitness Foundation"
         title="Fitness Exercises"
-        description="Ejercicios demo del modulo Fitness Foundation"
+        description="Ejercicios demo del módulo Fitness Foundation"
         meta={
           <>
-            <FoundationBadge tone="info" outlined>
-              Lectura aislada
+            <FoundationBadge tone="primary" outlined>
+              Solo lectura
             </FoundationBadge>
-            <FoundationBadge tone={companyId ? "success" : "warning"} outlined={!companyId}>
-              {companyId ? "CompanyId activo" : "Sin companyId"}
-            </FoundationBadge>
+            {company?.name ? <FoundationBadge tone="info" outlined>{company.name}</FoundationBadge> : null}
+            {isDemoScope ? <FoundationBadge tone="success">54 ejercicios demo</FoundationBadge> : null}
             {isSupportMode ? (
               <FoundationBadge tone="warning" outlined>
-                Soporte temporal
+                Modo soporte
               </FoundationBadge>
             ) : null}
           </>
         }
       />
 
-      {!companyId ? (
+      {!companyId && !isScopeLoading ? (
         <FoundationCard
-          title="Empresa activa requerida"
-          description="Selecciona una empresa activa para consultar los ejercicios demo del modulo Fitness Foundation."
+          title="Necesitas una empresa activa"
+          description="Selecciona o resuelve una empresa válida para consultar el catálogo de ejercicios."
         >
           <p style={{ margin: 0, lineHeight: 1.6, color: "#475569" }}>
-            Esta pantalla no crea datos ni hace wiring global. Si no hay `companyId` disponible,
-            mantiene un fallback seguro y no consulta la API.
+            Si no existe `companyId`, la pantalla conserva un fallback seguro y evita cualquier llamada a la API.
           </p>
         </FoundationCard>
       ) : null}
@@ -156,21 +148,33 @@ export function FitnessExercisesPage() {
           gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))"
         }}
       >
-        <FoundationCard
-          eyebrow="Dataset"
+        <FitnessStatCard
+          eyebrow="Catalogo"
           title={String(totalExercises)}
-          description="Ejercicios demo activos cargados desde Fitness Core API."
+          description="Ejercicios activos cargados desde la API fitness."
+          accent="#0f766e"
+        />
+        <FitnessStatCard
+          eyebrow="Categorias"
+          title={String(categoriesVisible)}
+          description="Categorias visibles con el filtro actual."
           accent="#2563eb"
         />
-        <FoundationCard
-          eyebrow="Search"
-          title={deferredSearch.trim() ? "Filtro aplicado" : "Sin filtro"}
+        <FitnessStatCard
+          eyebrow="Equipos"
+          title={String(equipmentVisible)}
+          description="Variantes de equipo disponibles dentro del tenant."
+          accent="#7c3aed"
+        />
+        <FitnessStatCard
+          eyebrow="Busqueda"
+          title={deferredSearch.trim() ? "Filtro activo" : "Sin filtro"}
           description={
             deferredSearch.trim()
-              ? `Busqueda local: ${deferredSearch.trim()}`
-              : "Puedes filtrar por nombre, categoria, grupo muscular, equipo o dificultad."
+              ? `Coincidencias para: ${deferredSearch.trim()}`
+              : "Explora por ejercicio, grupo muscular, categoria o equipo."
           }
-          accent="#0f766e"
+          accent="#ea580c"
         />
       </div>
 
@@ -179,7 +183,7 @@ export function FitnessExercisesPage() {
           title="No fue posible cargar los ejercicios"
           description={getApiErrorMessage(
             exercisesQuery.error,
-            "La consulta Fitness Core fallo y la pantalla permanecio en modo seguro."
+            "La consulta Fitness Core falló y la pantalla quedó en modo seguro."
           )}
           accent="#dc2626"
         >
@@ -190,32 +194,34 @@ export function FitnessExercisesPage() {
       <FoundationTable
         columns={columns}
         rows={filteredExercises}
-        loading={Boolean(companyId) && exercisesQuery.isLoading}
-        caption="Listado demo de ejercicios Fitness Foundation en modo solo lectura."
+        loading={Boolean(companyId) && (exercisesQuery.isLoading || isScopeLoading)}
+        caption="Catálogo visual de ejercicios fitness en modo lectura."
         emptyTitle={companyId ? "No hay ejercicios para mostrar" : "Sin empresa activa"}
         emptyDescription={
           companyId
             ? deferredSearch.trim()
-              ? "No hay coincidencias para el filtro actual."
-              : "La empresa activa no tiene ejercicios demo visibles en este momento."
-            : "La pantalla se mantiene aislada hasta contar con un companyId temporal."
+              ? "No encontramos ejercicios que coincidan con tu búsqueda."
+              : "Esta empresa no tiene ejercicios visibles en este momento."
+            : "La vista se mantiene aislada hasta contar con un tenant seguro."
         }
         toolbar={
           <FoundationTableToolbar
-            title="Catalogo de ejercicios"
-            description="Consulta de solo lectura con componentes Foundation y filtro local seguro."
+            title="Catálogo de ejercicios"
+            description="Un listado pensado para navegar rápido entre movimientos, equipos y niveles de dificultad."
+            searchLabel="Buscar ejercicio"
+            searchHint="Filtra por nombre, grupo muscular, categoria, equipo o dificultad."
             searchValue={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Buscar ejercicio, categoria, grupo muscular..."
+            searchPlaceholder="Buscar ejercicio, categoria o equipo..."
             actions={
               <FoundationBadge tone="primary" outlined>
-                Demo staging
+                Demo de staging
               </FoundationBadge>
             }
           />
         }
       />
-    </FoundationPageLayout>
+    </>
   );
 }
 

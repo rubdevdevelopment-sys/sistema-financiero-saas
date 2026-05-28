@@ -8,6 +8,8 @@ export function FoundationTableToolbar({
   searchValue = "",
   onSearchChange = () => {},
   searchPlaceholder = "Buscar...",
+  searchLabel = "Search",
+  searchHint = "Placeholder de busqueda simple para adopcion futura.",
   actions = null,
   filters = null,
   title = null,
@@ -53,12 +55,12 @@ export function FoundationTableToolbar({
         <div style={{ display: "flex", gap: theme.spacing[3], flex: "1 1 22rem", flexWrap: "wrap" }}>
           <div style={{ minWidth: "16rem", flex: "1 1 18rem" }}>
             <FoundationInput
-              label="Search"
+              label={searchLabel}
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder={searchPlaceholder}
               prefix="⌕"
-              hint="Placeholder de busqueda simple para adopcion futura."
+              hint={searchHint}
             />
           </div>
           {filters}

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
+    "dev:staging": "node --watch scripts/dev-staging.js",
     "start": "node src/server.js",
     "lint": "node -e \"console.log('Configura ESLint en la siguiente fase si lo deseas.')\""
   },

@@ -1,18 +1,16 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
-import {
-  getRoutineTemplateStructure,
-  listRoutineTemplates
-} from "../api/routineTemplatesApi.js";
-import { useActiveCompany } from "../../context/ActiveCompanyContext.jsx";
+import { getRoutineTemplateStructure, listRoutineTemplates } from "../api/routineTemplatesApi.js";
+import { useFitnessCompanyScope } from "../hooks/useFitnessCompanyScope.js";
 import { getApiErrorMessage } from "../../utils/api.js";
 import { FoundationBadge } from "../../foundation/components/FoundationBadge.jsx";
 import { FoundationCard } from "../../foundation/components/FoundationCard.jsx";
 import { FoundationPageHeader } from "../../foundation/layouts/FoundationPageHeader.jsx";
-import { FoundationPageLayout } from "../../foundation/layouts/FoundationPageLayout.jsx";
 import { FoundationTable } from "../../foundation/tables/FoundationTable.jsx";
 import { FoundationTableToolbar } from "../../foundation/tables/FoundationTableToolbar.jsx";
+import { FitnessStatCard } from "../components/FitnessStatCard.jsx";
 
 function formatLabel(value, fallback = "No definido") {
   if (typeof value !== "string" || value.trim() === "") {
@@ -25,7 +23,7 @@ function formatLabel(value, fallback = "No definido") {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function normalizeLevelTone(value) {
+function levelTone(value) {
   switch (value) {
     case "advanced":
       return "danger";
@@ -57,16 +55,15 @@ function buildTemplateMetrics(structure) {
 }
 
 export function FitnessRoutineTemplatesPage() {
-  const { activeCompany, isSupportMode } = useActiveCompany();
+  const { companyId, company, isSupportMode, isDemoScope, isLoading: isScopeLoading } =
+    useFitnessCompanyScope();
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const companyId = activeCompany?.id ?? null;
 
   const templatesQuery = useQuery({
     queryKey: ["fitness-routine-templates", companyId],
     queryFn: async () => {
       const templates = await listRoutineTemplates(companyId, { isActive: true });
-
       const structures = await Promise.all(
         templates.map(async (template) => {
           const structure = await getRoutineTemplateStructure(companyId, template.id);
@@ -91,11 +88,7 @@ export function FitnessRoutineTemplatesPage() {
     }
 
     return rows.filter((item) =>
-      [
-        item?.name,
-        item?.goal,
-        item?.level
-      ]
+      [item?.name, item?.goal, item?.level]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );
@@ -105,97 +98,109 @@ export function FitnessRoutineTemplatesPage() {
     () => [
       {
         key: "name",
-        label: "Name",
-        minWidth: "14rem"
+        label: "Plantilla",
+        minWidth: "14rem",
+        render: (row) => (
+          <Link
+            to={`/fitness/routines/${row.id}`}
+            style={{ color: "#0f172a", fontWeight: 700, textDecoration: "none" }}
+          >
+            {row.name}
+          </Link>
+        )
       },
       {
         key: "goal",
-        label: "Goal",
+        label: "Objetivo",
         render: (row) => formatLabel(row.goal)
       },
       {
         key: "level",
-        label: "Level",
-        render: (row) => (
-          <FoundationBadge tone={normalizeLevelTone(row.level)}>
-            {formatLabel(row.level)}
-          </FoundationBadge>
-        )
+        label: "Nivel",
+        render: (row) => <FoundationBadge tone={levelTone(row.level)}>{formatLabel(row.level)}</FoundationBadge>
       },
       {
         key: "duration_weeks",
-        label: "Duration Weeks",
-        align: "center"
+        label: "Duracion",
+        align: "center",
+        render: (row) => `${row.duration_weeks} semanas`
       },
       {
         key: "is_active",
-        label: "Is Active",
+        label: "Estado",
         render: (row) => (
           <FoundationBadge tone={row.is_active ? "success" : "neutral"} outlined={!row.is_active}>
-            {row.is_active ? "Active" : "Inactive"}
+            {row.is_active ? "Activa" : "Inactiva"}
           </FoundationBadge>
         )
       },
       {
         key: "totalWeeks",
-        label: "Total Weeks",
+        label: "Semanas",
         align: "center"
       },
       {
         key: "totalDays",
-        label: "Total Days",
+        label: "Dias",
         align: "center"
       },
       {
         key: "totalExercises",
-        label: "Total Exercises",
+        label: "Ejercicios",
         align: "center"
+      },
+      {
+        key: "actions",
+        label: "Detalle",
+        render: (row) => (
+          <Link
+            to={`/fitness/routines/${row.id}`}
+            style={{ color: "#0f766e", fontWeight: 700, textDecoration: "none" }}
+          >
+            Abrir rutina
+          </Link>
+        )
       }
     ],
     []
   );
 
   const totalTemplates = Array.isArray(templatesQuery.data) ? templatesQuery.data.length : 0;
-  const totalWeeksVisible = filteredTemplates.reduce(
-    (total, item) => total + (item.totalWeeks ?? 0),
-    0
-  );
+  const totalWeeksVisible = filteredTemplates.reduce((total, item) => total + (item.totalWeeks ?? 0), 0);
   const totalExercisesVisible = filteredTemplates.reduce(
     (total, item) => total + (item.totalExercises ?? 0),
     0
   );
 
   return (
-    <FoundationPageLayout>
+    <>
       <FoundationPageHeader
         eyebrow="Fitness Foundation"
         title="Fitness Routine Templates"
-        description="Plantillas demo del modulo Fitness Foundation"
+        description="Plantillas demo del módulo Fitness Foundation"
         meta={
           <>
-            <FoundationBadge tone="info" outlined>
-              Lectura aislada
+            <FoundationBadge tone="primary" outlined>
+              Solo lectura
             </FoundationBadge>
-            <FoundationBadge tone={companyId ? "success" : "warning"} outlined={!companyId}>
-              {companyId ? "CompanyId activo" : "Sin companyId"}
-            </FoundationBadge>
+            {company?.name ? <FoundationBadge tone="info" outlined>{company.name}</FoundationBadge> : null}
+            {isDemoScope ? <FoundationBadge tone="success">8 plantillas demo</FoundationBadge> : null}
             {isSupportMode ? (
               <FoundationBadge tone="warning" outlined>
-                Soporte temporal
+                Modo soporte
               </FoundationBadge>
             ) : null}
           </>
         }
       />
 
-      {!companyId ? (
+      {!companyId && !isScopeLoading ? (
         <FoundationCard
-          title="Empresa activa requerida"
-          description="Selecciona una empresa activa para consultar las plantillas demo del modulo Fitness Foundation."
+          title="Necesitas una empresa activa"
+          description="Selecciona o resuelve una empresa válida para consultar las plantillas fitness."
         >
           <p style={{ margin: 0, lineHeight: 1.6, color: "#475569" }}>
-            La pantalla se mantiene en modo seguro si no existe `companyId` temporal disponible y
-            no intenta consultar la API.
+            La experiencia mantiene tenant safety y no consulta la API hasta tener un scope válido.
           </p>
         </FoundationCard>
       ) : null}
@@ -207,23 +212,33 @@ export function FitnessRoutineTemplatesPage() {
           gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))"
         }}
       >
-        <FoundationCard
-          eyebrow="Templates"
+        <FitnessStatCard
+          eyebrow="Plantillas"
           title={String(totalTemplates)}
-          description="Plantillas activas enriquecidas con métricas de estructura."
+          description="Programas activos enriquecidos con su estructura real."
           accent="#2563eb"
         />
-        <FoundationCard
-          eyebrow="Weeks"
+        <FitnessStatCard
+          eyebrow="Semanas visibles"
           title={String(totalWeeksVisible)}
           description="Suma visible de semanas dentro del filtro actual."
           accent="#7c3aed"
         />
-        <FoundationCard
-          eyebrow="Exercises"
+        <FitnessStatCard
+          eyebrow="Ejercicios visibles"
           title={String(totalExercisesVisible)}
-          description="Asignaciones de ejercicios visibles en las plantillas cargadas."
+          description="Asignaciones reales de ejercicios dentro de las rutinas cargadas."
           accent="#0f766e"
+        />
+        <FitnessStatCard
+          eyebrow="Busqueda"
+          title={deferredSearch.trim() ? "Filtro activo" : "Sin filtro"}
+          description={
+            deferredSearch.trim()
+              ? `Coincidencias para: ${deferredSearch.trim()}`
+              : "Explora por nombre, objetivo o nivel."
+          }
+          accent="#ea580c"
         />
       </div>
 
@@ -232,7 +247,7 @@ export function FitnessRoutineTemplatesPage() {
           title="No fue posible cargar las plantillas"
           description={getApiErrorMessage(
             templatesQuery.error,
-            "La consulta Fitness Core fallo y la pantalla permanecio en modo seguro."
+            "La consulta Fitness Core falló y la pantalla quedó en modo seguro."
           )}
           accent="#dc2626"
         >
@@ -243,32 +258,34 @@ export function FitnessRoutineTemplatesPage() {
       <FoundationTable
         columns={columns}
         rows={filteredTemplates}
-        loading={Boolean(companyId) && templatesQuery.isLoading}
-        caption="Listado demo de templates de rutinas Fitness Foundation en modo solo lectura."
+        loading={Boolean(companyId) && (templatesQuery.isLoading || isScopeLoading)}
+        caption="Listado de plantillas fitness con métricas reales de estructura."
         emptyTitle={companyId ? "No hay plantillas para mostrar" : "Sin empresa activa"}
         emptyDescription={
           companyId
             ? deferredSearch.trim()
-              ? "No hay coincidencias para el filtro actual."
-              : "La empresa activa no tiene plantillas demo visibles en este momento."
-            : "La pantalla se mantiene aislada hasta contar con un companyId temporal."
+              ? "No encontramos plantillas que coincidan con tu búsqueda."
+              : "Esta empresa no tiene plantillas visibles en este momento."
+            : "La vista se mantiene aislada hasta contar con un tenant seguro."
         }
         toolbar={
           <FoundationTableToolbar
-            title="Catalogo de plantillas"
-            description="Consulta de solo lectura con métricas calculadas desde la estructura de cada rutina."
+            title="Biblioteca de rutinas"
+            description="Consulta de programas fitness con una jerarquía visual pensada para ventas, operación y coaching."
+            searchLabel="Buscar plantilla"
+            searchHint="Filtra por nombre, objetivo o nivel."
             searchValue={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Buscar template, objetivo o nivel..."
+            searchPlaceholder="Buscar plantilla, objetivo o nivel..."
             actions={
               <FoundationBadge tone="primary" outlined>
-                Demo staging
+                Demo de staging
               </FoundationBadge>
             }
           />
         }
       />
-    </FoundationPageLayout>
+    </>
   );
 }
 

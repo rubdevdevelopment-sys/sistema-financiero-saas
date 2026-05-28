@@ -40,14 +40,10 @@ export async function getFitnessList(path, companyId, filters = {}) {
     return [];
   }
 
-  try {
-    const response = await api.get(path, {
-      params: Object.fromEntries(buildFitnessCompanyParams(companyId, filters).entries())
-    });
-    return Array.isArray(response.data?.data) ? response.data.data : [];
-  } catch (_error) {
-    return [];
-  }
+  const response = await api.get(path, {
+    params: Object.fromEntries(buildFitnessCompanyParams(companyId, filters).entries())
+  });
+  return Array.isArray(response.data?.data) ? response.data.data : [];
 }
 
 export async function getFitnessItem(path, companyId, id) {
@@ -55,14 +51,10 @@ export async function getFitnessItem(path, companyId, id) {
     return null;
   }
 
-  try {
-    const response = await api.get(path, {
-      params: Object.fromEntries(buildFitnessCompanyParams(companyId).entries())
-    });
-    return response.data?.data ?? null;
-  } catch (_error) {
-    return null;
-  }
+  const response = await api.get(path, {
+    params: Object.fromEntries(buildFitnessCompanyParams(companyId).entries())
+  });
+  return response.data?.data ?? null;
 }
 
 export { normalizeNullableString };

@@ -1,10 +1,11 @@
 import { Suspense, lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { ProtectedRoute } from "./components/auth/ProtectedRoute.jsx";
 import { RoleRedirect } from "./components/auth/RoleRedirect.jsx";
 import { AppShell } from "./components/layout/AppShell.jsx";
 import { SuperAdminLayout } from "./components/layout/SuperAdminLayout.jsx";
+import { FitnessAppLayout } from "./fitness/layouts/FitnessAppLayout.jsx";
 
 const LoginPage = lazy(() => import("./pages/auth/LoginPage.jsx"));
 const DashboardPage = lazy(() => import("./pages/dashboard/DashboardPage.jsx"));
@@ -19,7 +20,9 @@ const FundLoansPage = lazy(() => import("./pages/funds/FundLoansPage.jsx"));
 const FundPenaltiesPage = lazy(() => import("./pages/funds/FundPenaltiesPage.jsx"));
 const FundModulePage = lazy(() => import("./pages/funds/FundModulePage.jsx"));
 const FitnessExercisesPage = lazy(() => import("./fitness/pages/FitnessExercisesPage.jsx"));
+const FitnessClientsPage = lazy(() => import("./fitness/pages/FitnessClientsPage.jsx"));
 const FitnessRoutineTemplatesPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplatesPage.jsx"));
+const FitnessRoutineTemplateDetailPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplateDetailPage.jsx"));
 const CompaniesPage = lazy(() => import("./pages/admin/CompaniesPage.jsx"));
 const UsersPage = lazy(() => import("./pages/admin/UsersPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/settings/SettingsPage.jsx"));
@@ -142,14 +145,6 @@ export const router = createBrowserRouter([
             element: withSuspense(<FundModulePage type="distributions" />)
           },
           {
-            path: "fitness/exercises",
-            element: withSuspense(<FitnessExercisesPage />)
-          },
-          {
-            path: "fitness/routines",
-            element: withSuspense(<FitnessRoutineTemplatesPage />)
-          },
-          {
             path: "admin/empresas",
             element: withSuspense(<CompaniesPage />)
           },
@@ -160,6 +155,32 @@ export const router = createBrowserRouter([
           {
             path: "configuracion",
             element: withSuspense(<SettingsPage />)
+          }
+        ]
+      },
+      {
+        path: "fitness",
+        element: <FitnessAppLayout />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/fitness/exercises" replace />
+          },
+          {
+            path: "exercises",
+            element: withSuspense(<FitnessExercisesPage />)
+          },
+          {
+            path: "clients",
+            element: withSuspense(<FitnessClientsPage />)
+          },
+          {
+            path: "routines",
+            element: withSuspense(<FitnessRoutineTemplatesPage />)
+          },
+          {
+            path: "routines/:id",
+            element: withSuspense(<FitnessRoutineTemplateDetailPage />)
           }
         ]
       }
