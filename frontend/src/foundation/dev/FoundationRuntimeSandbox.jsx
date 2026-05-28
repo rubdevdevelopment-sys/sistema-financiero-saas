@@ -14,6 +14,7 @@ import { formatCurrency } from "../utils/formatCurrency.js";
 import { formatDate } from "../utils/formatDate.js";
 import { formatNumber } from "../utils/formatNumber.js";
 import { formatDateTime } from "../utils/formatDateTime.js";
+import { buildFoundationTheme } from "../theme/foundation-theme.js";
 
 function Field({ label, value }) {
   return (
@@ -43,6 +44,7 @@ function SandboxReadout() {
   const { branding } = useBranding();
   const { features, ready, isEnabled } = useFeatures();
   const { theme } = useContext(ThemeContext);
+  const tokenTheme = buildFoundationTheme(branding);
   const sampleAmount = 1523450.75;
   const sampleNumber = 1234567.89;
   const sampleDate = "2026-05-27T15:45:00.000Z";
@@ -170,6 +172,78 @@ function SandboxReadout() {
               >
                 Secondary action
               </button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
+          <h3 className="text-lg font-semibold text-slate-950">Design token preview</h3>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <Field label="Token Theme" value={tokenTheme.name} />
+            <Field label="Primary 500" value={tokenTheme.colors.primary[500]} />
+            <Field label="Neutral 900" value={tokenTheme.colors.neutral[900]} />
+            <Field label="Semantic Background" value={tokenTheme.semantic.background} />
+            <Field label="Spacing 6" value={tokenTheme.spacing[6]} />
+            <Field label="Radius 2xl" value={tokenTheme.radius["2xl"]} />
+            <Field label="Title Size" value={tokenTheme.typography.fontSizes["2xl"]} />
+            <Field label="Shadow Md" value={tokenTheme.shadows.md} />
+          </div>
+        </article>
+
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
+          <h3 className="text-lg font-semibold text-slate-950">Token surfaces</h3>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div
+              className="rounded-[24px] border p-5"
+              style={{
+                backgroundColor: tokenTheme.semantic.surface,
+                borderColor: tokenTheme.semantic.border,
+                color: tokenTheme.semantic.text,
+                boxShadow: tokenTheme.shadows.md
+              }}
+            >
+              <p className="text-xs uppercase tracking-[0.2em]" style={tokenTheme.typography.textStyles.eyebrow}>
+                Foundation
+              </p>
+              <h4 className="mt-3" style={tokenTheme.typography.textStyles.title}>
+                Surface token
+              </h4>
+              <p className="mt-3" style={tokenTheme.typography.textStyles.body}>
+                Tokenized visual primitives can evolve independently from active production pages.
+              </p>
+            </div>
+
+            <div
+              className="rounded-[24px] p-5"
+              style={{
+                background:
+                  tokenTheme.semantic.background ??
+                  "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+                color: tokenTheme.branding.text_color,
+                boxShadow: tokenTheme.shadows.lg
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{
+                    backgroundColor: tokenTheme.branding.primary_color,
+                    color: tokenTheme.branding.secondary_color,
+                    transition: tokenTheme.transitions.presets.color
+                  }}
+                >
+                  {tokenTheme.name}
+                </span>
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: tokenTheme.branding.accent_color }}
+                />
+              </div>
+              <p className="mt-4 text-sm" style={tokenTheme.typography.textStyles.bodySmall}>
+                Future branding can override semantic tokens without forcing a global UI replacement.
+              </p>
             </div>
           </div>
         </article>
