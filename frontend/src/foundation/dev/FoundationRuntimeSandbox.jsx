@@ -17,6 +17,11 @@ import { FoundationBadge } from "../components/FoundationBadge.jsx";
 import { FoundationLoader } from "../components/FoundationLoader.jsx";
 import { FoundationEmptyState } from "../components/FoundationEmptyState.jsx";
 import { FoundationModal } from "../components/FoundationModal.jsx";
+import { FoundationPageLayout } from "../layouts/FoundationPageLayout.jsx";
+import { FoundationSection } from "../layouts/FoundationSection.jsx";
+import { FoundationGrid } from "../layouts/FoundationGrid.jsx";
+import { FoundationPageHeader } from "../layouts/FoundationPageHeader.jsx";
+import { FoundationPanel } from "../layouts/FoundationPanel.jsx";
 import { formatCurrency } from "../utils/formatCurrency.js";
 import { formatDate } from "../utils/formatDate.js";
 import { formatNumber } from "../utils/formatNumber.js";
@@ -402,6 +407,91 @@ function SandboxReadout() {
           <FoundationBadge tone="info">Runtime-safe preview</FoundationBadge>
         </div>
       </FoundationModal>
+
+      <section className="space-y-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Layout Core
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-slate-950">
+            Enterprise-ready layout components remain opt-in
+          </h3>
+        </div>
+
+        <div style={{ overflow: "hidden", borderRadius: tokenTheme.radius["3xl"] }}>
+          <FoundationPageLayout
+            maxWidth="100%"
+            sidebar={
+              <FoundationPanel
+                title="Sidebar-ready"
+                description="This preview shows a future-compatible navigation rail without wiring it globally."
+                accent={tokenTheme.semantic.accent}
+              >
+                <div className="space-y-3">
+                  <FoundationBadge tone="primary">Overview</FoundationBadge>
+                  <FoundationBadge tone="info" outlined>
+                    Analytics
+                  </FoundationBadge>
+                  <FoundationBadge tone="success" outlined>
+                    Foundation
+                  </FoundationBadge>
+                </div>
+              </FoundationPanel>
+            }
+            style={{
+              border: `1px solid ${tokenTheme.semantic.border}`,
+              borderRadius: tokenTheme.radius["3xl"]
+            }}
+          >
+            <FoundationPageHeader
+              eyebrow="Foundation Layouts"
+              title="Composable enterprise shells"
+              description="Page, section, grid, panel and header primitives can shape future SaaS experiences without touching current product layouts."
+              meta={
+                <>
+                  <FoundationBadge tone="success">Responsive-ready</FoundationBadge>
+                  <FoundationBadge tone="primary">Future-branding-ready</FoundationBadge>
+                </>
+              }
+              actions={
+                <>
+                  <FoundationButton variant="secondary">Export</FoundationButton>
+                  <FoundationButton variant="primary">Create layout</FoundationButton>
+                </>
+              }
+            />
+
+            <FoundationSection
+              title="Section composition"
+              description="Sections provide predictable spacing, titles and action slots."
+              actions={<FoundationButton variant="ghost">See anatomy</FoundationButton>}
+            >
+              <FoundationGrid autoFit minItemWidth="14rem">
+                <FoundationPanel title="Panel A" description="A reusable analytics block.">
+                  <p className="text-sm text-slate-600">Content stays decoupled from active dashboards.</p>
+                </FoundationPanel>
+                <FoundationPanel title="Panel B" description="Token-driven information surface.">
+                  <p className="text-sm text-slate-600">Future tenants can override branding later.</p>
+                </FoundationPanel>
+                <FoundationPanel title="Panel C" description="Future-sidebar-compatible structure.">
+                  <p className="text-sm text-slate-600">No production layout replacement occurs here.</p>
+                </FoundationPanel>
+              </FoundationGrid>
+            </FoundationSection>
+
+            <FoundationSection
+              title="Grid behavior"
+              description="FoundationGrid supports adaptive card groupings with safe defaults."
+            >
+              <FoundationGrid autoFit minItemWidth="18rem">
+                <FoundationCard title="12 active modules" description="Sample metric in a layout shell." />
+                <FoundationCard title="4 rollout stages" description="Structured card spacing from tokens." />
+                <FoundationCard title="0 global changes" description="This phase stays isolated and opt-in." />
+              </FoundationGrid>
+            </FoundationSection>
+          </FoundationPageLayout>
+        </div>
+      </section>
     </div>
   );
 }
