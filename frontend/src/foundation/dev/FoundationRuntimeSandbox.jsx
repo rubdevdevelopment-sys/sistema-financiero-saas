@@ -9,6 +9,7 @@ import { useSettings } from "../hooks/useSettings.js";
 import { useRuntimeSettings } from "../hooks/useRuntimeSettings.js";
 import { useBranding } from "../hooks/useBranding.js";
 import { useFeatures } from "../hooks/useFeatures.js";
+import { FoundationFormatterPreview } from "./FoundationFormatterPreview.jsx";
 import { formatCurrency } from "../utils/formatCurrency.js";
 import { formatDate } from "../utils/formatDate.js";
 import { formatNumber } from "../utils/formatNumber.js";
@@ -197,6 +198,12 @@ function SandboxReadout() {
           ))}
         </div>
       </section>
+
+      <FoundationFormatterPreview
+        sampleAmount={sampleAmount}
+        sampleNumber={sampleNumber}
+        sampleDate={sampleDate}
+      />
     </div>
   );
 }
