@@ -11,17 +11,12 @@ import { FoundationPageHeader } from "../../foundation/layouts/FoundationPageHea
 import { FoundationTable } from "../../foundation/tables/FoundationTable.jsx";
 import { FoundationTableToolbar } from "../../foundation/tables/FoundationTableToolbar.jsx";
 import { FitnessStatCard } from "../components/FitnessStatCard.jsx";
-
-function formatLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
+import {
+  localizeFitnessGoal,
+  localizeFitnessLevel,
+  localizeRoutineMetricsSearchText,
+  localizeRoutineName
+} from "../utils/fitnessLocalization.js";
 
 function levelTone(value) {
   switch (value) {
@@ -88,7 +83,7 @@ export function FitnessRoutineTemplatesPage() {
     }
 
     return rows.filter((item) =>
-      [item?.name, item?.goal, item?.level]
+      [item?.name, item?.goal, item?.level, localizeRoutineMetricsSearchText(item)]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );
@@ -105,20 +100,20 @@ export function FitnessRoutineTemplatesPage() {
             to={`/fitness/routines/${row.id}`}
             style={{ color: "#0f172a", fontWeight: 700, textDecoration: "none" }}
           >
-            {row.name}
+            {localizeRoutineName(row.name)}
           </Link>
         )
       },
       {
         key: "goal",
         label: "Objetivo",
-        render: (row) => formatLabel(row.goal)
+        render: (row) => localizeFitnessGoal(row.goal)
       },
       {
         key: "level",
         label: "Nivel",
         render: (row) => (
-          <FoundationBadge tone={levelTone(row.level)}>{formatLabel(row.level)}</FoundationBadge>
+          <FoundationBadge tone={levelTone(row.level)}>{localizeFitnessLevel(row.level)}</FoundationBadge>
         )
       },
       {

@@ -12,7 +12,7 @@ export function FitnessDashboardMetricGrid({ metrics }) {
       <FitnessStatCard
         eyebrow="Clientes activos"
         title={String(metrics.activeClients)}
-        description="Personas con acompañamiento visible dentro del tenant actual."
+        description="Personas con acompanamiento visible dentro de la empresa actual."
         accent="#0f766e"
       />
       <FitnessStatCard
@@ -24,7 +24,7 @@ export function FitnessDashboardMetricGrid({ metrics }) {
       <FitnessStatCard
         eyebrow="Ejercicios disponibles"
         title={String(metrics.exercises)}
-        description="Movimientos visibles en el catálogo fitness."
+        description="Movimientos visibles en el catalogo fitness."
         accent="#7c3aed"
       />
       <FitnessStatCard

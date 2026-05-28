@@ -10,6 +10,14 @@ import { FoundationPageHeader } from "../../foundation/layouts/FoundationPageHea
 import { FoundationTable } from "../../foundation/tables/FoundationTable.jsx";
 import { FoundationTableToolbar } from "../../foundation/tables/FoundationTableToolbar.jsx";
 import { FitnessStatCard } from "../components/FitnessStatCard.jsx";
+import {
+  localizeExerciseName,
+  localizeExerciseSearchText,
+  localizeFitnessCategory,
+  localizeFitnessDifficulty,
+  localizeFitnessEquipment,
+  localizeFitnessMuscleGroup
+} from "../utils/fitnessLocalization.js";
 
 function difficultyTone(value) {
   switch (value) {
@@ -22,17 +30,6 @@ function difficultyTone(value) {
     default:
       return "neutral";
   }
-}
-
-function formatLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 export function FitnessExercisesPage() {
@@ -56,7 +53,14 @@ export function FitnessExercisesPage() {
     }
 
     return rows.filter((item) =>
-      [item?.name, item?.category, item?.muscle_group, item?.equipment, item?.difficulty]
+      [
+        item?.name,
+        item?.category,
+        item?.muscle_group,
+        item?.equipment,
+        item?.difficulty,
+        localizeExerciseSearchText(item)
+      ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );
@@ -64,28 +68,33 @@ export function FitnessExercisesPage() {
 
   const columns = useMemo(
     () => [
-      { key: "name", label: "Ejercicio", minWidth: "12rem" },
+      {
+        key: "name",
+        label: "Ejercicio",
+        minWidth: "12rem",
+        render: (row) => localizeExerciseName(row.name)
+      },
       {
         key: "category",
         label: "Categoria",
-        render: (row) => formatLabel(row.category)
+        render: (row) => localizeFitnessCategory(row.category)
       },
       {
         key: "muscle_group",
         label: "Grupo muscular",
-        render: (row) => formatLabel(row.muscle_group)
+        render: (row) => localizeFitnessMuscleGroup(row.muscle_group)
       },
       {
         key: "equipment",
         label: "Equipo",
-        render: (row) => formatLabel(row.equipment)
+        render: (row) => localizeFitnessEquipment(row.equipment)
       },
       {
         key: "difficulty",
         label: "Dificultad",
         render: (row) => (
           <FoundationBadge tone={difficultyTone(row.difficulty)}>
-            {formatLabel(row.difficulty)}
+            {localizeFitnessDifficulty(row.difficulty)}
           </FoundationBadge>
         )
       },

@@ -11,6 +11,10 @@ import { getApiErrorMessage } from "../../utils/api.js";
 import { FitnessTrainerCard } from "../components/trainers/FitnessTrainerCard.jsx";
 import { FitnessTrainerStats } from "../components/trainers/FitnessTrainerStats.jsx";
 import { FitnessTrainerTable } from "../components/trainers/FitnessTrainerTable.jsx";
+import {
+  localizeFitnessStatus,
+  localizeTrainerSpecialization
+} from "../utils/fitnessLocalization.js";
 
 const DEMO_ROUTINES_BY_INDEX = [4, 3, 2, 5];
 
@@ -23,17 +27,6 @@ function buildAvatarInitials(name) {
     .join("");
 }
 
-function toTitleLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
 function enrichTrainers(trainers, clients) {
   return trainers.map((trainer, index) => {
     const assignedClientsCount = clients.filter(
@@ -43,8 +36,8 @@ function enrichTrainers(trainers, clients) {
     return {
       ...trainer,
       avatarInitials: buildAvatarInitials(trainer.name),
-      statusLabel: trainer.status === "active" ? "Activo" : toTitleLabel(trainer.status, "Sin estado"),
-      specializationLabel: trainer.specialization || "Especializacion general",
+      statusLabel: localizeFitnessStatus(trainer.status),
+      specializationLabel: localizeTrainerSpecialization(trainer.specialization),
       assignedClientsCount,
       supervisedRoutinesCount: DEMO_ROUTINES_BY_INDEX[index % DEMO_ROUTINES_BY_INDEX.length]
     };

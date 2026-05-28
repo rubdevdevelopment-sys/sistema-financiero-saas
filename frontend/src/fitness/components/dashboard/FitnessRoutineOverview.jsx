@@ -2,17 +2,11 @@ import { Link } from "react-router-dom";
 
 import { FoundationBadge } from "../../../foundation/components/FoundationBadge.jsx";
 import { FoundationCard } from "../../../foundation/components/FoundationCard.jsx";
-
-function formatLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
+import {
+  localizeFitnessGoal,
+  localizeFitnessLevel,
+  localizeRoutineName
+} from "../../utils/fitnessLocalization.js";
 
 function levelTone(value) {
   switch (value) {
@@ -58,9 +52,9 @@ export function FitnessRoutineOverview({ routines = [] }) {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
-                <strong style={{ color: "#0f172a" }}>{routine.name}</strong>
+                <strong style={{ color: "#0f172a" }}>{localizeRoutineName(routine.name)}</strong>
                 <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
-                  <FoundationBadge tone={levelTone(routine.level)}>{formatLabel(routine.level)}</FoundationBadge>
+                  <FoundationBadge tone={levelTone(routine.level)}>{localizeFitnessLevel(routine.level)}</FoundationBadge>
                   <FoundationBadge tone="info" outlined>
                     {routine.duration_weeks} semanas
                   </FoundationBadge>
@@ -71,7 +65,7 @@ export function FitnessRoutineOverview({ routines = [] }) {
               </p>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
                 <span style={{ color: "#64748b", fontSize: "0.9rem" }}>
-                  Objetivo: {formatLabel(routine.goal)}
+                  Objetivo: {localizeFitnessGoal(routine.goal)}
                 </span>
                 <Link
                   to={`/fitness/routines/${routine.id}`}

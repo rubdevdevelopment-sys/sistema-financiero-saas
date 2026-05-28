@@ -16,17 +16,11 @@ import { getApiErrorMessage } from "../../utils/api.js";
 import { RoutineMetricCard } from "../components/routines/RoutineMetricCard.jsx";
 import { RoutineStructureSidebar } from "../components/routines/RoutineStructureSidebar.jsx";
 import { RoutineWeekCard } from "../components/routines/RoutineWeekCard.jsx";
-
-function formatLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
+import {
+  localizeFitnessGoal,
+  localizeFitnessLevel,
+  localizeRoutineName
+} from "../utils/fitnessLocalization.js";
 
 function levelTone(value) {
   switch (value) {
@@ -106,7 +100,7 @@ export function FitnessRoutineTemplateDetailPage() {
     <>
       <FoundationPageHeader
         eyebrow="Fitness Foundation"
-        title={template?.name ?? "Detalle de rutina"}
+        title={template?.name ? localizeRoutineName(template.name) : "Detalle de rutina"}
         description={template?.description ?? "Visualizacion detallada de una rutina demo del modulo Fitness Foundation"}
         actions={
           <Link to="/fitness/routines" style={{ textDecoration: "none" }}>
@@ -122,12 +116,12 @@ export function FitnessRoutineTemplateDetailPage() {
             ) : null}
             {template?.goal ? (
               <FoundationBadge tone="info" outlined>
-                {formatLabel(template.goal)}
+                {localizeFitnessGoal(template.goal)}
               </FoundationBadge>
             ) : null}
             {template?.level ? (
               <FoundationBadge tone={levelTone(template.level)}>
-                {formatLabel(template.level)}
+                {localizeFitnessLevel(template.level)}
               </FoundationBadge>
             ) : null}
             <FoundationBadge tone={template?.is_active ? "success" : "neutral"} outlined={!template?.is_active}>

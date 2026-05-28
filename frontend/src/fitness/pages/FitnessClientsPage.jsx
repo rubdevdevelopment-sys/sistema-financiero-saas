@@ -11,6 +11,7 @@ import { FitnessStatCard } from "../components/FitnessStatCard.jsx";
 import { FitnessClientCard } from "../components/clients/FitnessClientCard.jsx";
 import { FitnessClientProgressCard } from "../components/clients/FitnessClientProgressCard.jsx";
 import { FitnessClientTable } from "../components/clients/FitnessClientTable.jsx";
+import { localizeClientGoal, localizeFitnessStatus } from "../utils/fitnessLocalization.js";
 
 const DEMO_LEVELS = ["Principiante", "Intermedio", "Avanzado"];
 const DEMO_ROUTINES = [
@@ -28,17 +29,6 @@ const DEMO_ACTIVITIES = [
   "Hace 3 dias"
 ];
 
-function toTitleLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
 function buildAvatarInitials(name) {
   return String(name || "")
     .split(" ")
@@ -55,8 +45,8 @@ function enrichClients(clients) {
     return {
       ...client,
       avatarInitials: buildAvatarInitials(client.name),
-      goalLabel: client.goal || "Acompanamiento general",
-      statusLabel: client.status === "active" ? "Activo" : toTitleLabel(client.status, "Sin estado"),
+      goalLabel: localizeClientGoal(client.goal),
+      statusLabel: localizeFitnessStatus(client.status),
       levelLabel: DEMO_LEVELS[index % DEMO_LEVELS.length],
       routineLabel: DEMO_ROUTINES[index % DEMO_ROUTINES.length],
       assignedTrainerLabel: client.assigned_trainer_name || "Sin entrenador asignado",

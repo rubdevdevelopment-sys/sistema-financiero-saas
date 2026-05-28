@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { FoundationBadge } from "../../../foundation/components/FoundationBadge.jsx";
 import { FoundationCard } from "../../../foundation/components/FoundationCard.jsx";
+import { localizeClientGoal, localizeFitnessStatus } from "../../utils/fitnessLocalization.js";
 
 function buildAvatarInitials(name) {
   return String(name || "")
@@ -63,7 +64,7 @@ export function FitnessRecentClients({ clients = [] }) {
                 <div style={{ minWidth: 0 }}>
                   <strong style={{ display: "block", color: "#0f172a" }}>{client.name}</strong>
                   <span style={{ color: "#64748b", fontSize: "0.9rem" }}>
-                    {client.goal || "Acompanamiento general"}
+                    {localizeClientGoal(client.goal)}
                   </span>
                 </div>
               </div>
@@ -73,7 +74,7 @@ export function FitnessRecentClients({ clients = [] }) {
                   {client.assigned_trainer_name || "Sin entrenador"}
                 </FoundationBadge>
                 <FoundationBadge tone={client.status === "active" ? "success" : "neutral"}>
-                  {client.status === "active" ? "Activo" : "En espera"}
+                  {localizeFitnessStatus(client.status, "En espera")}
                 </FoundationBadge>
               </div>
             </div>

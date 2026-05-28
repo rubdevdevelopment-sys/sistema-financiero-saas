@@ -1,16 +1,12 @@
 import { FoundationBadge } from "../../../foundation/components/FoundationBadge.jsx";
 import { FoundationCard } from "../../../foundation/components/FoundationCard.jsx";
-
-function formatLabel(value, fallback = "No definido") {
-  if (typeof value !== "string" || value.trim() === "") {
-    return fallback;
-  }
-
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
+import {
+  localizeExerciseName,
+  localizeFitnessCategory,
+  localizeFitnessDifficulty,
+  localizeFitnessEquipment,
+  localizeFitnessMuscleGroup
+} from "../../utils/fitnessLocalization.js";
 
 function difficultyTone(value) {
   switch (value) {
@@ -47,25 +43,25 @@ export function RoutineExerciseCard({ exercise }) {
               Ejercicio {exercise.sort_order ?? "-"}
             </p>
             <h4 style={{ margin: "0.45rem 0 0", fontSize: "1.05rem", color: "#0f172a" }}>
-              {exercise.exercise?.name ?? "Ejercicio"}
+              {localizeExerciseName(exercise.exercise?.name)}
             </h4>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <FoundationBadge tone="info" outlined>
-              {formatLabel(exercise.exercise?.category)}
+              {localizeFitnessCategory(exercise.exercise?.category)}
             </FoundationBadge>
             <FoundationBadge tone={difficultyTone(exercise.exercise?.difficulty)}>
-              {formatLabel(exercise.exercise?.difficulty)}
+              {localizeFitnessDifficulty(exercise.exercise?.difficulty)}
             </FoundationBadge>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <FoundationBadge tone="primary" outlined>
-            {formatLabel(exercise.exercise?.muscle_group)}
+            {localizeFitnessMuscleGroup(exercise.exercise?.muscle_group)}
           </FoundationBadge>
           <FoundationBadge tone="neutral" outlined>
-            {formatLabel(exercise.exercise?.equipment)}
+            {localizeFitnessEquipment(exercise.exercise?.equipment)}
           </FoundationBadge>
         </div>
 
