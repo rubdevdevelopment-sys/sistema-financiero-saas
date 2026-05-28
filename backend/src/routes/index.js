@@ -12,6 +12,7 @@ import { participantRouter } from "./participant.routes.js";
 import { publicRouter } from "./public.routes.js";
 import { superAdminRouter } from "./superAdmin.routes.js";
 import { fundRouter } from "./fund.routes.js";
+import { fitnessRouter } from "../fitness/fitness.routes.js";
 
 export const router = Router();
 
@@ -28,3 +29,4 @@ router.use("/incomes", incomeRouter);
 router.use("/expenses", expenseRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/funds", fundRouter);
+router.use("/fitness", fitnessRouter);
