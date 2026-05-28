@@ -7,7 +7,7 @@ const sidebarItems = [
   { key: "dashboard", label: "Panel general", to: "/fitness" },
   { key: "exercises", label: "Ejercicios", to: "/fitness/exercises" },
   { key: "routines", label: "Plantillas", to: "/fitness/routines" },
-  { key: "trainers", label: "Entrenadores", soon: true },
+  { key: "trainers", label: "Entrenadores", to: "/fitness/trainers" },
   { key: "clients", label: "Clientes", to: "/fitness/clients" }
 ];
 

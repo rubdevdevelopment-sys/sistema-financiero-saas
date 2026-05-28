@@ -22,6 +22,7 @@ const FundModulePage = lazy(() => import("./pages/funds/FundModulePage.jsx"));
 const FitnessExercisesPage = lazy(() => import("./fitness/pages/FitnessExercisesPage.jsx"));
 const FitnessDashboardPage = lazy(() => import("./fitness/pages/FitnessDashboardPage.jsx"));
 const FitnessClientsPage = lazy(() => import("./fitness/pages/FitnessClientsPage.jsx"));
+const FitnessTrainersPage = lazy(() => import("./fitness/pages/FitnessTrainersPage.jsx"));
 const FitnessRoutineTemplatesPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplatesPage.jsx"));
 const FitnessRoutineTemplateDetailPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplateDetailPage.jsx"));
 const CompaniesPage = lazy(() => import("./pages/admin/CompaniesPage.jsx"));
@@ -174,6 +175,10 @@ export const router = createBrowserRouter([
           {
             path: "clients",
             element: withSuspense(<FitnessClientsPage />)
+          },
+          {
+            path: "trainers",
+            element: withSuspense(<FitnessTrainersPage />)
           },
           {
             path: "routines",
