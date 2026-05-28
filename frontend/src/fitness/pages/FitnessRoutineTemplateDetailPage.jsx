@@ -133,7 +133,7 @@ export function FitnessRoutineTemplateDetailPage() {
             <FoundationBadge tone={template?.is_active ? "success" : "neutral"} outlined={!template?.is_active}>
               {template?.is_active ? "Activa" : "Inactiva"}
             </FoundationBadge>
-            {isDemoScope ? <FoundationBadge tone="success">Scope demo</FoundationBadge> : null}
+            {isDemoScope ? <FoundationBadge tone="success">Empresa demo</FoundationBadge> : null}
           </>
         }
       />
@@ -144,7 +144,7 @@ export function FitnessRoutineTemplateDetailPage() {
           description="No hay companyId resuelto para consultar la estructura detallada de la rutina."
         >
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-            La experiencia permanece en fallback seguro hasta contar con un scope de tenant valido.
+            La experiencia permanece en fallback seguro hasta contar con una empresa valida.
           </p>
         </FoundationCard>
       ) : null}

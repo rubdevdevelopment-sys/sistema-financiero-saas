@@ -55,7 +55,7 @@ export function FitnessTopbar({ company, source, isDemoScope }) {
                 : source === "authenticated_user"
                   ? "Usuario autenticado"
                   : source === "super_admin_demo_scope"
-                    ? "Scope demo automatico"
+                    ? "Empresa demo automatica"
                     : source}
           </FoundationBadge>
         ) : null}

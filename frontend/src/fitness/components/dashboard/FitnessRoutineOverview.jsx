@@ -31,7 +31,7 @@ export function FitnessRoutineOverview({ routines = [] }) {
   return (
     <FoundationCard
       title="Rutinas destacadas"
-      description="Resumen rápido de plantillas con mejor valor para onboarding, ventas o retención."
+      description="Resumen rapido de plantillas con mejor valor para onboarding, ventas o retencion."
       accent="#7c3aed"
       footer={
         <Link to="/fitness/routines" style={{ textDecoration: "none", color: "#0f766e", fontWeight: 700 }}>
@@ -42,7 +42,7 @@ export function FitnessRoutineOverview({ routines = [] }) {
       <div style={{ display: "grid", gap: "0.9rem" }}>
         {routines.length === 0 ? (
           <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>
-            Aún no hay rutinas visibles para resumir en este dashboard.
+            Aun no hay rutinas visibles para resumir en este dashboard.
           </p>
         ) : (
           routines.map((routine) => (
@@ -67,13 +67,16 @@ export function FitnessRoutineOverview({ routines = [] }) {
                 </div>
               </div>
               <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-                {routine.description || "Rutina demo lista para navegación detallada."}
+                {routine.description || "Rutina demo lista para navegacion detallada."}
               </p>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
                 <span style={{ color: "#64748b", fontSize: "0.9rem" }}>
                   Objetivo: {formatLabel(routine.goal)}
                 </span>
-                <Link to={`/fitness/routines/${routine.id}`} style={{ textDecoration: "none", color: "#0f766e", fontWeight: 700 }}>
+                <Link
+                  to={`/fitness/routines/${routine.id}`}
+                  style={{ textDecoration: "none", color: "#0f766e", fontWeight: 700 }}
+                >
                   Ver detalle
                 </Link>
               </div>

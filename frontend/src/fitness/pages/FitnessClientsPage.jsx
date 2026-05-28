@@ -55,7 +55,7 @@ function enrichClients(clients) {
     return {
       ...client,
       avatarInitials: buildAvatarInitials(client.name),
-      goalLabel: client.goal || "Acompañamiento general",
+      goalLabel: client.goal || "Acompanamiento general",
       statusLabel: client.status === "active" ? "Activo" : toTitleLabel(client.status, "Sin estado"),
       levelLabel: DEMO_LEVELS[index % DEMO_LEVELS.length],
       routineLabel: DEMO_ROUTINES[index % DEMO_ROUTINES.length],
@@ -91,13 +91,7 @@ export function FitnessClientsPage() {
     }
 
     return rows.filter((client) =>
-      [
-        client.name,
-        client.goalLabel,
-        client.assignedTrainerLabel,
-        client.routineLabel,
-        client.levelLabel
-      ]
+      [client.name, client.goalLabel, client.assignedTrainerLabel, client.routineLabel, client.levelLabel]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch))
     );
@@ -125,11 +119,7 @@ export function FitnessClientsPage() {
             <FoundationBadge tone="primary" outlined>
               Solo lectura
             </FoundationBadge>
-            {company?.name ? (
-              <FoundationBadge tone="info" outlined>
-                {company.name}
-              </FoundationBadge>
-            ) : null}
+            {company?.name ? <FoundationBadge tone="info" outlined>{company.name}</FoundationBadge> : null}
             {isDemoScope ? <FoundationBadge tone="success">Dataset demo activo</FoundationBadge> : null}
             {isSupportMode ? (
               <FoundationBadge tone="warning" outlined>
@@ -143,11 +133,10 @@ export function FitnessClientsPage() {
       {!companyId && !isScopeLoading ? (
         <FoundationCard
           title="Necesitas una empresa activa"
-          description="Esta vista se mantiene protegida hasta resolver un tenant valido para consultar clientes fitness."
+          description="Esta vista se mantiene protegida hasta resolver una empresa valida para consultar clientes fitness."
         >
           <p style={{ margin: 0, lineHeight: 1.6, color: "#475569" }}>
-            No se hace ningun bypass. Si falta `companyId`, la experiencia permanece en fallback
-            seguro y no consulta la API.
+            No se hace ningun bypass. Si falta `companyId`, la experiencia permanece en fallback seguro y no consulta la API.
           </p>
         </FoundationCard>
       ) : null}
@@ -168,7 +157,7 @@ export function FitnessClientsPage() {
         <FitnessStatCard
           eyebrow="Activos"
           title={String(activeClients)}
-          description="Clientes con seguimiento activo dentro del tenant actual."
+          description="Clientes con seguimiento activo dentro de la empresa actual."
           accent="#2563eb"
         />
         <FitnessStatCard

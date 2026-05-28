@@ -64,11 +64,7 @@ export function FitnessExercisesPage() {
 
   const columns = useMemo(
     () => [
-      {
-        key: "name",
-        label: "Ejercicio",
-        minWidth: "12rem"
-      },
+      { key: "name", label: "Ejercicio", minWidth: "12rem" },
       {
         key: "category",
         label: "Categoria",
@@ -88,7 +84,9 @@ export function FitnessExercisesPage() {
         key: "difficulty",
         label: "Dificultad",
         render: (row) => (
-          <FoundationBadge tone={difficultyTone(row.difficulty)}>{formatLabel(row.difficulty)}</FoundationBadge>
+          <FoundationBadge tone={difficultyTone(row.difficulty)}>
+            {formatLabel(row.difficulty)}
+          </FoundationBadge>
         )
       },
       {
@@ -112,8 +110,8 @@ export function FitnessExercisesPage() {
     <>
       <FoundationPageHeader
         eyebrow="Fitness Foundation"
-        title="Fitness Exercises"
-        description="Ejercicios demo del módulo Fitness Foundation"
+        title="Ejercicios"
+        description="Ejercicios demo del modulo Fitness Foundation"
         meta={
           <>
             <FoundationBadge tone="primary" outlined>
@@ -133,7 +131,7 @@ export function FitnessExercisesPage() {
       {!companyId && !isScopeLoading ? (
         <FoundationCard
           title="Necesitas una empresa activa"
-          description="Selecciona o resuelve una empresa válida para consultar el catálogo de ejercicios."
+          description="Selecciona o resuelve una empresa valida para consultar el catalogo de ejercicios."
         >
           <p style={{ margin: 0, lineHeight: 1.6, color: "#475569" }}>
             Si no existe `companyId`, la pantalla conserva un fallback seguro y evita cualquier llamada a la API.
@@ -163,7 +161,7 @@ export function FitnessExercisesPage() {
         <FitnessStatCard
           eyebrow="Equipos"
           title={String(equipmentVisible)}
-          description="Variantes de equipo disponibles dentro del tenant."
+          description="Variantes de equipo disponibles dentro de la empresa."
           accent="#7c3aed"
         />
         <FitnessStatCard
@@ -183,7 +181,7 @@ export function FitnessExercisesPage() {
           title="No fue posible cargar los ejercicios"
           description={getApiErrorMessage(
             exercisesQuery.error,
-            "La consulta Fitness Core falló y la pantalla quedó en modo seguro."
+            "La consulta Fitness Core fallo y la pantalla quedo en modo seguro."
           )}
           accent="#dc2626"
         >
@@ -195,19 +193,19 @@ export function FitnessExercisesPage() {
         columns={columns}
         rows={filteredExercises}
         loading={Boolean(companyId) && (exercisesQuery.isLoading || isScopeLoading)}
-        caption="Catálogo visual de ejercicios fitness en modo lectura."
+        caption="Catalogo visual de ejercicios fitness en modo lectura."
         emptyTitle={companyId ? "No hay ejercicios para mostrar" : "Sin empresa activa"}
         emptyDescription={
           companyId
             ? deferredSearch.trim()
-              ? "No encontramos ejercicios que coincidan con tu búsqueda."
+              ? "No encontramos ejercicios que coincidan con tu busqueda."
               : "Esta empresa no tiene ejercicios visibles en este momento."
-            : "La vista se mantiene aislada hasta contar con un tenant seguro."
+            : "La vista se mantiene aislada hasta contar con una empresa segura."
         }
         toolbar={
           <FoundationTableToolbar
-            title="Catálogo de ejercicios"
-            description="Un listado pensado para navegar rápido entre movimientos, equipos y niveles de dificultad."
+            title="Catalogo de ejercicios"
+            description="Un listado pensado para navegar rapido entre movimientos, equipos y niveles de dificultad."
             searchLabel="Buscar ejercicio"
             searchHint="Filtra por nombre, grupo muscular, categoria, equipo o dificultad."
             searchValue={search}

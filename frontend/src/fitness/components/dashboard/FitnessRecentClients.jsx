@@ -16,7 +16,7 @@ export function FitnessRecentClients({ clients = [] }) {
   return (
     <FoundationCard
       title="Clientes recientes"
-      description="Una muestra rápida del frente activo de acompañamiento."
+      description="Una muestra rapida del frente activo de acompanamiento."
       accent="#0ea5e9"
       footer={
         <Link to="/fitness/clients" style={{ textDecoration: "none", color: "#0f766e", fontWeight: 700 }}>
@@ -27,7 +27,7 @@ export function FitnessRecentClients({ clients = [] }) {
       <div style={{ display: "grid", gap: "0.85rem" }}>
         {clients.length === 0 ? (
           <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>
-            Todavía no hay clientes visibles para esta empresa dentro del dashboard.
+            Todavia no hay clientes visibles para esta empresa dentro del dashboard.
           </p>
         ) : (
           clients.map((client) => (
@@ -63,7 +63,7 @@ export function FitnessRecentClients({ clients = [] }) {
                 <div style={{ minWidth: 0 }}>
                   <strong style={{ display: "block", color: "#0f172a" }}>{client.name}</strong>
                   <span style={{ color: "#64748b", fontSize: "0.9rem" }}>
-                    {client.goal || "Acompañamiento general"}
+                    {client.goal || "Acompanamiento general"}
                   </span>
                 </div>
               </div>

@@ -117,7 +117,9 @@ export function FitnessRoutineTemplatesPage() {
       {
         key: "level",
         label: "Nivel",
-        render: (row) => <FoundationBadge tone={levelTone(row.level)}>{formatLabel(row.level)}</FoundationBadge>
+        render: (row) => (
+          <FoundationBadge tone={levelTone(row.level)}>{formatLabel(row.level)}</FoundationBadge>
+        )
       },
       {
         key: "duration_weeks",
@@ -176,8 +178,8 @@ export function FitnessRoutineTemplatesPage() {
     <>
       <FoundationPageHeader
         eyebrow="Fitness Foundation"
-        title="Fitness Routine Templates"
-        description="Plantillas demo del módulo Fitness Foundation"
+        title="Plantillas de rutina"
+        description="Plantillas demo del modulo Fitness Foundation"
         meta={
           <>
             <FoundationBadge tone="primary" outlined>
@@ -197,10 +199,10 @@ export function FitnessRoutineTemplatesPage() {
       {!companyId && !isScopeLoading ? (
         <FoundationCard
           title="Necesitas una empresa activa"
-          description="Selecciona o resuelve una empresa válida para consultar las plantillas fitness."
+          description="Selecciona o resuelve una empresa valida para consultar las plantillas fitness."
         >
           <p style={{ margin: 0, lineHeight: 1.6, color: "#475569" }}>
-            La experiencia mantiene tenant safety y no consulta la API hasta tener un scope válido.
+            La experiencia mantiene tenant safety y no consulta la API hasta tener un scope valido.
           </p>
         </FoundationCard>
       ) : null}
@@ -247,7 +249,7 @@ export function FitnessRoutineTemplatesPage() {
           title="No fue posible cargar las plantillas"
           description={getApiErrorMessage(
             templatesQuery.error,
-            "La consulta Fitness Core falló y la pantalla quedó en modo seguro."
+            "La consulta Fitness Core fallo y la pantalla quedo en modo seguro."
           )}
           accent="#dc2626"
         >
@@ -259,19 +261,19 @@ export function FitnessRoutineTemplatesPage() {
         columns={columns}
         rows={filteredTemplates}
         loading={Boolean(companyId) && (templatesQuery.isLoading || isScopeLoading)}
-        caption="Listado de plantillas fitness con métricas reales de estructura."
+        caption="Listado de plantillas fitness con metricas reales de estructura."
         emptyTitle={companyId ? "No hay plantillas para mostrar" : "Sin empresa activa"}
         emptyDescription={
           companyId
             ? deferredSearch.trim()
-              ? "No encontramos plantillas que coincidan con tu búsqueda."
+              ? "No encontramos plantillas que coincidan con tu busqueda."
               : "Esta empresa no tiene plantillas visibles en este momento."
-            : "La vista se mantiene aislada hasta contar con un tenant seguro."
+            : "La vista se mantiene aislada hasta contar con una empresa segura."
         }
         toolbar={
           <FoundationTableToolbar
             title="Biblioteca de rutinas"
-            description="Consulta de programas fitness con una jerarquía visual pensada para ventas, operación y coaching."
+            description="Consulta de programas fitness con una jerarquia visual pensada para ventas, operacion y coaching."
             searchLabel="Buscar plantilla"
             searchHint="Filtra por nombre, objetivo o nivel."
             searchValue={search}

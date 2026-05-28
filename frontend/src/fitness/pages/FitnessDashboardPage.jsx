@@ -75,7 +75,7 @@ export function FitnessDashboardPage() {
       <FoundationPageHeader
         eyebrow="Fitness Foundation"
         title="Panel comercial fitness"
-        description="La portada del workspace fitness para conectar operación, acompañamiento y venta en una sola vista."
+        description="La portada del workspace fitness para conectar operacion, acompanamiento y venta en una sola vista."
         meta={
           <>
             <FoundationBadge tone="primary" outlined>
@@ -95,7 +95,7 @@ export function FitnessDashboardPage() {
       {!companyId && !isScopeLoading ? (
         <FoundationCard
           title="Necesitas una empresa activa"
-          description="El dashboard comercial se mantiene aislado hasta tener un tenant válido para consultar la API."
+          description="El dashboard comercial se mantiene aislado hasta tener una empresa valida para consultar la API."
         >
           <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
             Esta portada no hace bypass. Si falta `companyId`, mantiene fallback seguro y evita cargar datos.
@@ -108,7 +108,7 @@ export function FitnessDashboardPage() {
           title="No fue posible cargar el panel fitness"
           description={getApiErrorMessage(
             dashboardError,
-            "Alguna de las consultas del dashboard falló y la experiencia quedó en modo seguro."
+            "Alguna de las consultas del dashboard fallo y la experiencia quedo en modo seguro."
           )}
           accent="#dc2626"
         >
@@ -131,7 +131,7 @@ export function FitnessDashboardPage() {
 
         <FoundationCard
           title="Bloque comercial"
-          description="Una narrativa corta para presentar el valor del módulo desde la primera pantalla."
+          description="Una narrativa corta para presentar el valor del modulo desde la primera pantalla."
           accent="#14b8a6"
           style={{
             background:
@@ -139,8 +139,8 @@ export function FitnessDashboardPage() {
           }}
         >
           <p style={{ margin: 0, color: "#334155", lineHeight: 1.75 }}>
-            Gestiona entrenamientos, clientes y rutinas desde un solo lugar. Usa esta vista para abrir una conversación
-            comercial, preparar una demo con datos reales del tenant o entrar rápidamente al flujo operativo del coach.
+            Gestiona entrenamientos, clientes y rutinas desde un solo lugar. Usa esta vista para abrir una conversacion
+            comercial, preparar una demo con datos reales de la empresa o entrar rapido al flujo operativo del coach.
           </p>
         </FoundationCard>
       </div>
@@ -159,7 +159,7 @@ export function FitnessDashboardPage() {
       {isLoading ? (
         <FoundationCard
           title="Cargando dashboard"
-          description="Preparando métricas, clientes y rutinas del workspace fitness."
+          description="Preparando metricas, clientes y rutinas del workspace fitness."
         />
       ) : null}
     </>

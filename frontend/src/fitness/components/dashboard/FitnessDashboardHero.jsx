@@ -26,10 +26,10 @@ export function FitnessDashboardHero({ company, hasScope, isDemoScope }) {
       >
         <div style={{ display: "grid", gap: "1rem" }}>
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <FoundationBadge tone="info">Workspace fitness</FoundationBadge>
+            <FoundationBadge tone="info">Espacio fitness</FoundationBadge>
             {isDemoScope ? <FoundationBadge tone="success">Empresa demo activa</FoundationBadge> : null}
             <FoundationBadge tone={hasScope ? "success" : "warning"} outlined={!hasScope}>
-              {hasScope ? "Tenant seguro resuelto" : "Tenant pendiente"}
+              {hasScope ? "Empresa segura resuelta" : "Empresa pendiente"}
             </FoundationBadge>
           </div>
 
@@ -43,13 +43,13 @@ export function FitnessDashboardHero({ company, hasScope, isDemoScope }) {
                 color: "#99f6e4"
               }}
             >
-              Bienvenido al workspace fitness
+              Bienvenido al espacio fitness
             </p>
             <h2 style={{ margin: "0.65rem 0 0", fontSize: "2.2rem", lineHeight: 1.05, color: "#f8fafc" }}>
               Gestiona entrenamientos, clientes y rutinas desde un solo lugar
             </h2>
             <p style={{ margin: "0.85rem 0 0", lineHeight: 1.7, color: "#e2e8f0", maxWidth: "40rem" }}>
-              Esta portada conecta el frente comercial y operativo del modulo fitness con datos reales del tenant
+              Esta portada conecta el frente comercial y operativo del modulo fitness con datos reales de la empresa
               actual. Ideal para presentar acompanamiento, programacion y seguimiento sin salir del entorno demo.
             </p>
           </div>
