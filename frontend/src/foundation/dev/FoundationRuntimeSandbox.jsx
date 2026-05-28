@@ -6,6 +6,7 @@ import { FeatureProvider } from "../providers/FeatureProvider.jsx";
 import { ThemeContext, ThemeProvider } from "../providers/ThemeProvider.jsx";
 import { useTenant } from "../hooks/useTenant.js";
 import { useSettings } from "../hooks/useSettings.js";
+import { useRuntimeSettings } from "../hooks/useRuntimeSettings.js";
 import { useBranding } from "../hooks/useBranding.js";
 import { useFeatures } from "../hooks/useFeatures.js";
 
@@ -21,6 +22,19 @@ function Field({ label, value }) {
 function SandboxReadout() {
   const { tenant } = useTenant();
   const { settings } = useSettings();
+  const runtimeSettings = useRuntimeSettings(null, { source: "sandbox_context" });
+  const missingRuntimeSettings = useRuntimeSettings(
+    {
+      timezone: null,
+      currency: null,
+      locale: null,
+      language: null,
+      date_format: null,
+      number_format: null,
+      ready: false
+    },
+    { source: "sandbox_missing_runtime" }
+  );
   const { branding } = useBranding();
   const { features, ready, isEnabled } = useFeatures();
   const { theme } = useContext(ThemeContext);
@@ -47,6 +61,10 @@ function SandboxReadout() {
         <Field label="Timezone" value={settings.timezone} />
         <Field label="Currency" value={settings.currency} />
         <Field label="Locale" value={settings.locale ?? "null"} />
+        <Field label="Runtime Timezone" value={runtimeSettings.timezone} />
+        <Field label="Runtime Currency" value={runtimeSettings.currency} />
+        <Field label="Runtime Locale" value={runtimeSettings.locale} />
+        <Field label="Runtime Language" value={runtimeSettings.language} />
         <Field label="Theme Name" value={theme.name} />
         <Field label="Dark Mode" value={theme.darkModeEnabled} />
         <Field label="Feature Count" value={features.length} />
@@ -57,6 +75,18 @@ function SandboxReadout() {
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <article className="rounded-[28px] border border-slate-200 bg-white p-6">
+          <h3 className="text-lg font-semibold text-slate-950">Runtime settings resolution</h3>
+          <div className="mt-5 grid gap-3">
+            <Field label="Source" value={runtimeSettings.source} />
+            <Field label="Ready" value={runtimeSettings.ready} />
+            <Field label="Date Format" value={runtimeSettings.date_format} />
+            <Field label="Number Format" value={runtimeSettings.number_format} />
+            <Field label="Fallback Locale" value={missingRuntimeSettings.locale} />
+            <Field label="Fallback Language" value={missingRuntimeSettings.language} />
+          </div>
+        </article>
+
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
           <h3 className="text-lg font-semibold text-slate-950">Branding snapshot</h3>
           <div className="mt-5 grid gap-3">
             <Field label="Primary" value={branding.primary_color} />
@@ -66,7 +96,7 @@ function SandboxReadout() {
           </div>
         </article>
 
-        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6 xl:col-span-2">
           <h3 className="text-lg font-semibold text-slate-950">Theme preview</h3>
           <div
             className="mt-5 rounded-[24px] border p-6"
