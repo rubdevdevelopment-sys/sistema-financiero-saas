@@ -16,6 +16,9 @@ Define a safe future plan for executing foundation migrations in staging before 
 - Staging database backup verified
 - No runtime wiring enabled by default
 - Validation checklist prepared for tenant isolation
+- `SUPABASE_URL` explicitly confirmed as staging
+- `DATABASE_URL` explicitly confirmed as staging
+- Staging credentials loaded from a local non-committed file such as `backend/.env.staging`
 
 ## Execution order
 
@@ -41,3 +44,7 @@ Define a safe future plan for executing foundation migrations in staging before 
 - no EMAUS production rollout in this phase
 - no automatic backfill in this phase
 - no global runtime activation in this phase
+
+## Hard stop rule
+
+Phase 3 migrations may run only after `SUPABASE_URL` and `DATABASE_URL` are verified as staging targets. If either value is ambiguous, migration execution must stop.
