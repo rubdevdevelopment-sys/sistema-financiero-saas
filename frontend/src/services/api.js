@@ -5,13 +5,14 @@ function normalizeBaseUrl(url) {
 }
 
 function resolveApiBaseUrl() {
-  const configuredUrl = normalizeBaseUrl(import.meta.env.VITE_API_URL);
+  const viteEnv = import.meta.env ?? {};
+  const configuredUrl = normalizeBaseUrl(viteEnv.VITE_API_URL);
 
   if (configuredUrl) {
     return configuredUrl;
   }
 
-  if (import.meta.env.DEV) {
+  if (viteEnv.DEV) {
     return "http://localhost:4000/api";
   }
 
