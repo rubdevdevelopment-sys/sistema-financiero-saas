@@ -25,6 +25,8 @@ const FitnessClientsPage = lazy(() => import("./fitness/pages/FitnessClientsPage
 const FitnessTrainersPage = lazy(() => import("./fitness/pages/FitnessTrainersPage.jsx"));
 const FitnessRoutineTemplatesPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplatesPage.jsx"));
 const FitnessRoutineTemplateDetailPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplateDetailPage.jsx"));
+const FitnessLandingLoginPreview = lazy(() => import("./fitness/pages/FitnessLandingLoginPreview.jsx"));
+const FitnessGymLandingPreview = lazy(() => import("./fitness/pages/FitnessGymLandingPreview.jsx"));
 const CompaniesPage = lazy(() => import("./pages/admin/CompaniesPage.jsx"));
 const UsersPage = lazy(() => import("./pages/admin/UsersPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/settings/SettingsPage.jsx"));
@@ -57,6 +59,14 @@ export const router = createBrowserRouter([
   {
     path: "/public/:slug",
     element: withSuspense(<PublicCompanyDashboardPage />)
+  },
+  {
+    path: "/fitness/welcome",
+    element: withSuspense(<FitnessLandingLoginPreview />)
+  },
+  {
+    path: "/fitness/gym-preview",
+    element: withSuspense(<FitnessGymLandingPreview />)
   },
   {
     path: "/",
