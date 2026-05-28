@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { TenantProvider } from "../providers/TenantProvider.jsx";
 import { SettingsProvider } from "../providers/SettingsProvider.jsx";
 import { BrandingProvider } from "../providers/BrandingProvider.jsx";
@@ -10,6 +10,13 @@ import { useRuntimeSettings } from "../hooks/useRuntimeSettings.js";
 import { useBranding } from "../hooks/useBranding.js";
 import { useFeatures } from "../hooks/useFeatures.js";
 import { FoundationFormatterPreview } from "./FoundationFormatterPreview.jsx";
+import { FoundationButton } from "../components/FoundationButton.jsx";
+import { FoundationCard } from "../components/FoundationCard.jsx";
+import { FoundationInput } from "../components/FoundationInput.jsx";
+import { FoundationBadge } from "../components/FoundationBadge.jsx";
+import { FoundationLoader } from "../components/FoundationLoader.jsx";
+import { FoundationEmptyState } from "../components/FoundationEmptyState.jsx";
+import { FoundationModal } from "../components/FoundationModal.jsx";
 import { formatCurrency } from "../utils/formatCurrency.js";
 import { formatDate } from "../utils/formatDate.js";
 import { formatNumber } from "../utils/formatNumber.js";
@@ -26,6 +33,8 @@ function Field({ label, value }) {
 }
 
 function SandboxReadout() {
+  const [demoInput, setDemoInput] = useState("RubDev SaaS");
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
   const { tenant } = useTenant();
   const { settings } = useSettings();
   const runtimeSettings = useRuntimeSettings(null, { source: "sandbox_context" });
@@ -278,6 +287,121 @@ function SandboxReadout() {
         sampleNumber={sampleNumber}
         sampleDate={sampleDate}
       />
+
+      <section className="space-y-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            UI Core
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-slate-950">
+            Foundation components stay reusable and isolated
+          </h3>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <FoundationCard
+            eyebrow="Actions"
+            title="Foundation buttons, badges and inputs"
+            description="This preview uses only the new foundation component layer and theme tokens."
+            accent={tokenTheme.semantic.primary}
+            footer={
+              <div className="flex flex-wrap gap-3">
+                <FoundationButton variant="primary">Guardar cambios</FoundationButton>
+                <FoundationButton variant="secondary">Vista previa</FoundationButton>
+                <FoundationButton variant="ghost">Cancelar</FoundationButton>
+                <FoundationButton variant="danger">Desactivar</FoundationButton>
+              </div>
+            }
+          >
+            <div className="grid gap-5 md:grid-cols-2">
+              <FoundationInput
+                label="Workspace"
+                value={demoInput}
+                onChange={(event) => setDemoInput(event.target.value)}
+                hint="Input foundation con defaults seguros y accesibles."
+              />
+              <FoundationInput
+                label="Currency"
+                value={runtimeSettings.currency}
+                readOnly
+                prefix="ISO"
+                hint="Resolved from runtime settings."
+              />
+              <FoundationInput
+                label="Summary"
+                multiline
+                rows={4}
+                value="Foundation UI stays disconnected until a later controlled adoption phase."
+                readOnly
+              />
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <FoundationBadge tone="primary">Primary</FoundationBadge>
+                  <FoundationBadge tone="success">Ready</FoundationBadge>
+                  <FoundationBadge tone="warning">Staging</FoundationBadge>
+                  <FoundationBadge tone="danger" outlined>
+                    Blocked
+                  </FoundationBadge>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <FoundationButton variant="primary" onClick={() => setDemoModalOpen(true)}>
+                    Open modal
+                  </FoundationButton>
+                  <FoundationButton variant="secondary" loading>
+                    Loading
+                  </FoundationButton>
+                </div>
+              </div>
+            </div>
+          </FoundationCard>
+
+          <div className="space-y-6">
+            <FoundationCard
+              eyebrow="Feedback"
+              title="Loader"
+              description="Loading states remain theme-driven and opt-in."
+            >
+              <FoundationLoader label="Sincronizando sandbox" />
+            </FoundationCard>
+
+            <FoundationEmptyState
+              icon="◎"
+              title="No active rollout yet"
+              description="Foundation UI core exists only for isolated experimentation and future opt-in adoption."
+              action={
+                <FoundationButton variant="secondary" onClick={() => setDemoModalOpen(true)}>
+                  Review component set
+                </FoundationButton>
+              }
+            />
+          </div>
+        </div>
+      </section>
+
+      <FoundationModal
+        open={demoModalOpen}
+        title="Foundation Modal"
+        description="Accessible modal preview using only foundation tokens and isolated state."
+        onClose={() => setDemoModalOpen(false)}
+        footer={
+          <div className="flex flex-wrap justify-end gap-3">
+            <FoundationButton variant="ghost" onClick={() => setDemoModalOpen(false)}>
+              Close
+            </FoundationButton>
+            <FoundationButton variant="primary" onClick={() => setDemoModalOpen(false)}>
+              Confirm
+            </FoundationButton>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            This modal preview is disconnected from product routes and exists only inside the
+            foundation sandbox.
+          </p>
+          <FoundationBadge tone="info">Runtime-safe preview</FoundationBadge>
+        </div>
+      </FoundationModal>
     </div>
   );
 }
