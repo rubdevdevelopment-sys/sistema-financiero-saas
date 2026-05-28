@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Navigate, createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 import { ProtectedRoute } from "./components/auth/ProtectedRoute.jsx";
 import { RoleRedirect } from "./components/auth/RoleRedirect.jsx";
@@ -20,6 +20,7 @@ const FundLoansPage = lazy(() => import("./pages/funds/FundLoansPage.jsx"));
 const FundPenaltiesPage = lazy(() => import("./pages/funds/FundPenaltiesPage.jsx"));
 const FundModulePage = lazy(() => import("./pages/funds/FundModulePage.jsx"));
 const FitnessExercisesPage = lazy(() => import("./fitness/pages/FitnessExercisesPage.jsx"));
+const FitnessDashboardPage = lazy(() => import("./fitness/pages/FitnessDashboardPage.jsx"));
 const FitnessClientsPage = lazy(() => import("./fitness/pages/FitnessClientsPage.jsx"));
 const FitnessRoutineTemplatesPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplatesPage.jsx"));
 const FitnessRoutineTemplateDetailPage = lazy(() => import("./fitness/pages/FitnessRoutineTemplateDetailPage.jsx"));
@@ -164,7 +165,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to="/fitness/exercises" replace />
+            element: withSuspense(<FitnessDashboardPage />)
           },
           {
             path: "exercises",
