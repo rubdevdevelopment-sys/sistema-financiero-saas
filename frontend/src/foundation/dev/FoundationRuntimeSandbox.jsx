@@ -22,6 +22,9 @@ import { FoundationSection } from "../layouts/FoundationSection.jsx";
 import { FoundationGrid } from "../layouts/FoundationGrid.jsx";
 import { FoundationPageHeader } from "../layouts/FoundationPageHeader.jsx";
 import { FoundationPanel } from "../layouts/FoundationPanel.jsx";
+import { FoundationTable } from "../tables/FoundationTable.jsx";
+import { FoundationTableToolbar } from "../tables/FoundationTableToolbar.jsx";
+import { FoundationPagination } from "../tables/FoundationPagination.jsx";
 import { formatCurrency } from "../utils/formatCurrency.js";
 import { formatDate } from "../utils/formatDate.js";
 import { formatNumber } from "../utils/formatNumber.js";
@@ -40,6 +43,8 @@ function Field({ label, value }) {
 function SandboxReadout() {
   const [demoInput, setDemoInput] = useState("RubDev SaaS");
   const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [demoTableSearch, setDemoTableSearch] = useState("");
+  const [demoTablePage, setDemoTablePage] = useState(1);
   const { tenant } = useTenant();
   const { settings } = useSettings();
   const runtimeSettings = useRuntimeSettings(null, { source: "sandbox_context" });
@@ -70,6 +75,90 @@ function SandboxReadout() {
   const fallbackNumber = formatNumber(null, missingRuntimeSettings);
   const fallbackDate = formatDate(null, missingRuntimeSettings);
   const fallbackDateTime = formatDateTime(null, missingRuntimeSettings);
+  const tableRows = [
+    {
+      id: "cmp-001",
+      tenant: "RubDev Demo Company",
+      plan: "Enterprise Seed",
+      status: "Ready",
+      users: 18,
+      revenue: 1523450.75
+    },
+    {
+      id: "cmp-002",
+      tenant: "Nova Health Sandbox",
+      plan: "Growth",
+      status: "Staging",
+      users: 9,
+      revenue: 842300.2
+    },
+    {
+      id: "cmp-003",
+      tenant: "Atlas Fitness Trial",
+      plan: "Pilot",
+      status: "Pending",
+      users: 4,
+      revenue: 0
+    }
+  ];
+  const filteredTableRows = tableRows.filter((row) =>
+    [row.tenant, row.plan, row.status].some((value) =>
+      String(value).toLowerCase().includes(demoTableSearch.trim().toLowerCase())
+    )
+  );
+  const paginatedRows = filteredTableRows.slice((demoTablePage - 1) * 2, demoTablePage * 2);
+  const tableColumns = [
+    {
+      key: "tenant",
+      label: "Tenant",
+      render: (row) => (
+        <div>
+          <p className="font-semibold text-slate-950">{row.tenant}</p>
+          <p className="text-sm text-slate-500">{row.id}</p>
+        </div>
+      )
+    },
+    {
+      key: "plan",
+      label: "Plan",
+      render: (row) => <FoundationBadge tone="primary">{row.plan}</FoundationBadge>
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (row) => (
+        <FoundationBadge
+          tone={row.status === "Ready" ? "success" : row.status === "Staging" ? "warning" : "info"}
+        >
+          {row.status}
+        </FoundationBadge>
+      )
+    },
+    {
+      key: "users",
+      label: "Users",
+      align: "right",
+      render: (row) => formatNumber(row.users, runtimeSettings)
+    },
+    {
+      key: "revenue",
+      label: "Revenue",
+      align: "right",
+      render: (row) => formatCurrency(row.revenue, runtimeSettings)
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      type: "actions",
+      align: "right",
+      render: () => (
+        <>
+          <FoundationButton size="sm" variant="secondary">Open</FoundationButton>
+          <FoundationButton size="sm" variant="ghost">Inspect</FoundationButton>
+        </>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -491,6 +580,61 @@ function SandboxReadout() {
             </FoundationSection>
           </FoundationPageLayout>
         </div>
+      </section>
+
+      <section className="space-y-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Table System
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-slate-950">
+            Foundation tables remain reusable and disconnected from product data grids
+          </h3>
+        </div>
+
+        <FoundationTable
+          caption="Demo enterprise table preview with fake sandbox data only."
+          columns={tableColumns}
+          rows={paginatedRows}
+          toolbar={
+            <FoundationTableToolbar
+              title="Tenant rollout overview"
+              description="Search, actions and pagination stay in the foundation layer only."
+              searchValue={demoTableSearch}
+              onSearchChange={(value) => {
+                setDemoTableSearch(value);
+                setDemoTablePage(1);
+              }}
+              actions={<FoundationButton variant="primary">Create tenant</FoundationButton>}
+            />
+          }
+          pagination={
+            <FoundationPagination
+              page={demoTablePage}
+              totalPages={Math.max(1, Math.ceil(filteredTableRows.length / 2))}
+              totalItems={filteredTableRows.length}
+              pageSize={2}
+              onPageChange={setDemoTablePage}
+            />
+          }
+          emptyTitle="No tenants match this search"
+          emptyDescription="This isolated table preview uses fake demo data only."
+          emptyAction={<FoundationButton variant="secondary" onClick={() => setDemoTableSearch("")}>Reset search</FoundationButton>}
+        />
+
+        <FoundationGrid columns={2}>
+          <FoundationTable
+            columns={tableColumns.slice(0, 4)}
+            rows={[]}
+            emptyTitle="Empty table state"
+            emptyDescription="FoundationTable can render a dedicated empty state without product dependencies."
+          />
+          <FoundationTable
+            columns={tableColumns.slice(0, 4)}
+            rows={[]}
+            loading
+          />
+        </FoundationGrid>
       </section>
     </div>
   );
