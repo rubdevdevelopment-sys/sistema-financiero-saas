@@ -9,6 +9,10 @@ import { useSettings } from "../hooks/useSettings.js";
 import { useRuntimeSettings } from "../hooks/useRuntimeSettings.js";
 import { useBranding } from "../hooks/useBranding.js";
 import { useFeatures } from "../hooks/useFeatures.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
+import { formatDate } from "../utils/formatDate.js";
+import { formatNumber } from "../utils/formatNumber.js";
+import { formatDateTime } from "../utils/formatDateTime.js";
 
 function Field({ label, value }) {
   return (
@@ -38,6 +42,17 @@ function SandboxReadout() {
   const { branding } = useBranding();
   const { features, ready, isEnabled } = useFeatures();
   const { theme } = useContext(ThemeContext);
+  const sampleAmount = 1523450.75;
+  const sampleNumber = 1234567.89;
+  const sampleDate = "2026-05-27T15:45:00.000Z";
+  const formattedCurrency = formatCurrency(sampleAmount, runtimeSettings);
+  const formattedNumber = formatNumber(sampleNumber, runtimeSettings);
+  const formattedDate = formatDate(sampleDate, runtimeSettings);
+  const formattedDateTime = formatDateTime(sampleDate, runtimeSettings);
+  const fallbackCurrency = formatCurrency(null, missingRuntimeSettings);
+  const fallbackNumber = formatNumber(null, missingRuntimeSettings);
+  const fallbackDate = formatDate(null, missingRuntimeSettings);
+  const fallbackDateTime = formatDateTime(null, missingRuntimeSettings);
 
   return (
     <div className="space-y-6">
@@ -83,6 +98,20 @@ function SandboxReadout() {
             <Field label="Number Format" value={runtimeSettings.number_format} />
             <Field label="Fallback Locale" value={missingRuntimeSettings.locale} />
             <Field label="Fallback Language" value={missingRuntimeSettings.language} />
+          </div>
+        </article>
+
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
+          <h3 className="text-lg font-semibold text-slate-950">Formatter preview</h3>
+          <div className="mt-5 grid gap-3">
+            <Field label="Currency" value={formattedCurrency} />
+            <Field label="Number" value={formattedNumber} />
+            <Field label="Date" value={formattedDate} />
+            <Field label="DateTime" value={formattedDateTime} />
+            <Field label="Fallback Currency" value={fallbackCurrency} />
+            <Field label="Fallback Number" value={fallbackNumber} />
+            <Field label="Fallback Date" value={fallbackDate} />
+            <Field label="Fallback DateTime" value={fallbackDateTime} />
           </div>
         </article>
 
