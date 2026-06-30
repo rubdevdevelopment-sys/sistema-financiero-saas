@@ -230,6 +230,10 @@ const incomes = incomesQuery.data?.items || [];
 
         queryClient.invalidateQueries({
           queryKey: ["dashboard"]
+        }),
+
+        queryClient.invalidateQueries({
+          queryKey: ["participants"]
         })
       ]);
     },
@@ -344,6 +348,10 @@ const columns = [
 
         queryClient.invalidateQueries({
           queryKey: ["dashboard"]
+        }),
+
+        queryClient.invalidateQueries({
+          queryKey: ["participants"]
         })
       ]);
     },

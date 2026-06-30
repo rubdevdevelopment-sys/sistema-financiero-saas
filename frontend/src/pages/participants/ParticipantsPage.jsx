@@ -163,10 +163,15 @@ export function ParticipantsPage() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard label="Participantes" value={summary?.total_participants ?? 0} accent="bg-slate-900" formatter={integer} />
         <StatCard label="Meta global" value={summary?.total_target ?? 0} accent="bg-sky-500" />
         <StatCard label="Recaudado" value={summary?.total_paid ?? 0} accent="bg-emerald-500" />
+        <StatCard
+          label="Abonos por confirmar"
+          value={summary?.pending_income_amount ?? 0}
+          accent="bg-amber-400"
+        />
         <StatCard label="Pendiente" value={summary?.total_pending ?? 0} accent="bg-amber-500" />
       </div>
 
@@ -255,7 +260,7 @@ export function ParticipantsPage() {
               Cargando historial del participante...
             </div>
           ) : null}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Pagado</p>
               <p className="mt-2 text-2xl font-semibold text-slate-950">
@@ -266,6 +271,12 @@ export function ParticipantsPage() {
               <p className="text-sm text-slate-500">Pendiente</p>
               <p className="mt-2 text-2xl font-semibold text-slate-950">
                 {formatCurrency(detailQuery.data?.participant?.pending_balance ?? 0)}
+              </p>
+            </article>
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Abonos por confirmar</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-950">
+                {formatCurrency(detailQuery.data?.metrics?.pending_income_amount ?? 0)}
               </p>
             </article>
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -286,13 +297,14 @@ export function ParticipantsPage() {
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">Concepto</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">Cuota</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">Comprobante</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Estado</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">Monto</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {(detailQuery.data?.aportes ?? []).length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                       No hay aportes registrados.
                     </td>
                   </tr>
@@ -306,6 +318,13 @@ export function ParticipantsPage() {
                       </td>
                       <td className="px-4 py-4">{aporte.installment_number || "-"}</td>
                       <td className="px-4 py-4">{aporte.receipt_number || "-"}</td>
+                      <td className="px-4 py-4">
+                        {aporte.status === "completed"
+                          ? "Completado"
+                          : aporte.status === "pending"
+                            ? "Por confirmar"
+                            : "Cancelado"}
+                      </td>
                       <td className="px-4 py-4 font-semibold">{formatCurrency(aporte.amount)}</td>
                     </tr>
                   ))

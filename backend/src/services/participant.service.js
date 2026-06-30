@@ -118,7 +118,19 @@ export async function listParticipants(requestUser, filters) {
   const [itemsResult, countResult, totalsResult] = await Promise.all([
     query(
       `
-        select p.*
+        select
+          p.*,
+          coalesce(
+            (
+              select sum(i.amount)
+              from incomes i
+              where i.participant_id = p.id
+                and i.income_type = 'participant_payment'
+                and i.status = 'pending'
+                and i.deleted_at is null
+            ),
+            0
+          ) as pending_income_amount
         from participants p
         where ${whereClause}
         order by case p.payment_status
@@ -150,7 +162,20 @@ export async function listParticipants(requestUser, filters) {
           count(*) filter (where payment_status = 'pending')::int as pending_participants,
           coalesce(sum(target_amount), 0) as total_target,
           coalesce(sum(total_paid), 0) as total_paid,
-          coalesce(sum(pending_balance), 0) as total_pending
+          coalesce(sum(pending_balance), 0) as total_pending,
+          coalesce(
+            (
+              select sum(i.amount)
+              from incomes i
+              join participants linked_participant on linked_participant.id = i.participant_id
+              where linked_participant.company_id = $1
+                and linked_participant.deleted_at is null
+                and i.income_type = 'participant_payment'
+                and i.status = 'pending'
+                and i.deleted_at is null
+            ),
+            0
+          ) as pending_income_amount
         from participants
         where company_id = $1 and deleted_at is null
       `,
@@ -165,7 +190,8 @@ export async function listParticipants(requestUser, filters) {
       ...item,
       target_amount: Number(item.target_amount),
       total_paid: Number(item.total_paid),
-      pending_balance: Number(item.pending_balance)
+      pending_balance: Number(item.pending_balance),
+      pending_income_amount: Number(item.pending_income_amount)
     })),
     pagination: {
       page,
@@ -180,7 +206,8 @@ export async function listParticipants(requestUser, filters) {
       pending_participants: Number(totalsResult.rows[0].pending_participants),
       total_target: Number(totalsResult.rows[0].total_target),
       total_paid: Number(totalsResult.rows[0].total_paid),
-      total_pending: Number(totalsResult.rows[0].total_pending)
+      total_pending: Number(totalsResult.rows[0].total_pending),
+      pending_income_amount: Number(totalsResult.rows[0].pending_income_amount)
     }
   };
 }
@@ -207,7 +234,14 @@ export async function getParticipantDetail(id, requestUser) {
       `
         select
           count(*)::int as total_aportes,
-          max(movement_date) as ultimo_aporte
+          max(movement_date) as ultimo_aporte,
+          coalesce(
+            sum(amount) filter (
+              where income_type = 'participant_payment'
+                and status = 'pending'
+            ),
+            0
+          ) as pending_income_amount
         from incomes
         where participant_id = $1 and deleted_at is null
       `,
@@ -228,7 +262,8 @@ export async function getParticipantDetail(id, requestUser) {
     })),
     metrics: {
       total_aportes: Number(statsResult.rows[0].total_aportes),
-      ultimo_aporte: statsResult.rows[0].ultimo_aporte
+      ultimo_aporte: statsResult.rows[0].ultimo_aporte,
+      pending_income_amount: Number(statsResult.rows[0].pending_income_amount)
     }
   };
 }

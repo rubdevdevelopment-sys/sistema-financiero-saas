@@ -32,6 +32,7 @@ export function ParticipantTable({
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Documento</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Meta</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Pagado</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-600">Por confirmar</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Pendiente</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Estado</th>
               <th className="px-4 py-3 text-right font-semibold text-slate-600">Acciones</th>
@@ -40,13 +41,13 @@ export function ParticipantTable({
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
                   Cargando participantes...
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
                   No hay participantes para mostrar.
                 </td>
               </tr>
@@ -77,6 +78,9 @@ export function ParticipantTable({
                           style={{ width: `${progress}%` }}
                         />
                       </div>
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-amber-700">
+                      {currency(row.pending_income_amount)}
                     </td>
                     <td className="px-4 py-4 font-semibold text-slate-700">{currency(row.pending_balance)}</td>
                     <td className="px-4 py-4">
